@@ -65,6 +65,7 @@ reads are spaced a second apart, and every reading is kept in the browser, becau
 Amounts stay as bigint from the contract to the screen, so nothing is rounded before it is shown. The wallet SDKs are
 loaded after the first render, which keeps the first load near 100 KB gzipped.
 
+
 ## New questions
 
 The operator opens a question per city and day with `demo/open_live.py` in `weather-cast/AIMM-rust`, at Polymarket's
