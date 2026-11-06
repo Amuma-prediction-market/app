@@ -35,7 +35,7 @@ npm ci
 npm run dev
 ```
 
-Open http://localhost:5173 and connect a NEAR testnet wallet; MyNearWallet and Meteor are offered. The account menu's
+Open http://localhost:5173 and connect a wallet: Meteor (with a testnet account), or MetaMask or any Ethereum wallet in the browser, which signs NEAR transactions as the NEAR account `0x<address>` (NEP-518). A MetaMask account starts with no NEAR; the trade form's "Get testnet NEAR for gas" asks the gas faucet for 0.25. The account menu's
 faucet registers your account with tUSD, the test dollar, and mints 1,000. That is one approval, and a little testnet
 NEAR pays the token's storage deposit.
 

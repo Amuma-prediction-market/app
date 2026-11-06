@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { REFRESH_MS } from "../config";
 import { useAccount, useHoldings } from "../hooks/data";
 import { useFaucet } from "../hooks/useFaucet";
+import { GAS_NEEDED, isEthAccount, useGasFaucet } from "../hooks/useGasFaucet";
 import { useTransaction } from "../hooks/useTransaction";
 import { tokensFor } from "../lib/curve";
 import { payoutAfterBuy } from "../lib/payout";
@@ -48,6 +49,7 @@ export function TradePanel({
   const account = useAccount(q.collateral, wallet.accountId);
   const held = useHoldings(q.id, wallet.accountId);
   const faucet = useFaucet(q.collateral);
+  const gas = useGasFaucet(wallet.accountId);
   const tx = useTransaction();
   // one amount per tab: dollars to spend carry over between answers, tokens to sell are their own
   const [texts, setTexts] = useState<Record<Side, string>>({ buy: "", sell: "" });
@@ -119,6 +121,15 @@ export function TradePanel({
   if (phase !== "trading") action = { label: phase === "resolved" ? "Settled" : "Trading has closed", disabled: true };
   else if (!wallet.accountId) action = { label: "Connect wallet to trade", onClick: wallet.signIn };
   else if (!account.data) action = { label: "Loading your account…", disabled: true };
+  else if (account.data.near < GAS_NEEDED && isEthAccount(wallet.accountId))
+    action = {
+      label: gas.pending ? "Sending testnet NEAR…" : "Get testnet NEAR for gas",
+      onClick: () => void gas.run(),
+      disabled: gas.pending,
+      note: "Your MetaMask address is your NEAR account. It starts with no NEAR, and every trade needs a little for gas; this sends 0.25 testnet NEAR, free.",
+    };
+  else if (account.data.near < GAS_NEEDED)
+    action = { label: "Your account needs testnet NEAR", disabled: true, tone: "warn", note: "Every trade pays a little NEAR for gas. Your wallet's testnet faucet can send some." };
   else if (side === "buy" && (!account.data.registered || balance === 0n))
     action = { label: `Get 1,000 test ${symbol}`, onClick: faucet.run, disabled: !faucet.ready, note: `${symbol} is a test dollar with a free faucet. One approval registers your account with it and mints 1,000.` };
   else if (!amount || amount === 0n) action = { label: side === "buy" ? "Enter an amount" : "Enter how many to sell", disabled: true };
