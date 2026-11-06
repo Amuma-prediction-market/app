@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { EXPLORER_URL } from "../config";
 import { useAccount, useTokenMeta } from "../hooks/data";
 import { useFaucet } from "../hooks/useFaucet";
+import { GAS_NEEDED, isEthAccount, useGasFaucet } from "../hooks/useGasFaucet";
 import { formatUnits } from "../lib/units";
 import { shortAccount } from "../lib/format";
 import { useWallet } from "../near/wallet";
@@ -11,6 +12,7 @@ export function Header({ collateral }: { collateral: string | undefined }) {
   const meta = useTokenMeta(collateral);
   const account = useAccount(collateral, wallet.accountId);
   const faucet = useFaucet(collateral);
+  const gas = useGasFaucet(wallet.accountId);
   const [open, setOpen] = useState(false);
   const menu = useRef<HTMLDivElement>(null);
 
@@ -48,6 +50,11 @@ export function Header({ collateral }: { collateral: string | undefined }) {
               </button>
               {open && (
                 <div className="menu-pop card">
+                  {isEthAccount(wallet.accountId) && (account.data?.near ?? 0n) < GAS_NEEDED && (
+                    <button onClick={() => (setOpen(false), void gas.run())} disabled={gas.pending}>
+                      Get testnet NEAR for gas
+                    </button>
+                  )}
                   <button onClick={() => (setOpen(false), faucet.run())} disabled={!faucet.ready}>
                     Get 1,000 test {meta.data?.symbol ?? "dollars"}
                   </button>
