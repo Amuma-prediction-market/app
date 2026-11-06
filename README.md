@@ -65,6 +65,11 @@ reads are spaced a second apart, and every reading is kept in the browser, becau
 Amounts stay as bigint from the contract to the screen, so nothing is rounded before it is shown. The wallet SDKs are
 loaded after the first render, which keeps the first load near 100 KB gzipped.
 
+## The arbitrage bot
+
+`bot/` is a Cloudflare Worker that trades AIMM toward Polymarket's prices every two minutes, so the prices move the way a
+live market's would. Its README says how to deploy it and give it its keys.
+
 ## New questions
 
 The operator opens a question per city and day with `demo/open_live.py` in `weather-cast/AIMM-rust`, at Polymarket's
