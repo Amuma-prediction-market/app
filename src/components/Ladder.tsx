@@ -35,7 +35,10 @@ export function Ladder({
           </span>
           {poly && (
             <span>
-              <span className="swatch" style={{ border: "2px solid var(--poly)", borderRadius: "50%" }} />
+              <span
+                className="swatch"
+                style={{ width: 0, height: 0, borderRadius: 0, borderLeft: "5px solid transparent", borderRight: "5px solid transparent", borderTop: "7px solid var(--poly)" }}
+              />
               Polymarket
             </span>
           )}

@@ -69,7 +69,7 @@ export function PriceChart({ q, points, selected }: { q: Question; points: Histo
         {series.map((i, k) => (
           <span key={i}>
             <span className="swatch line" style={{ background: COLORS[k] }} />
-            {q.answers[i]}
+            {q.answers[i]} <span className="num faint">{(wadToNumber(points[points.length - 1]!.prices[i] ?? 0n) * 100).toFixed(1)}%</span>
           </span>
         ))}
         {widest >= 0.0005 && (

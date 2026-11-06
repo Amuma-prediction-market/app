@@ -8,7 +8,8 @@ import { isRegistered, registrationCost, tokenBalance, tokenMeta } from "../near
 import { loadHistory } from "../lib/history";
 import { polymarketPrices, slugFor } from "../lib/polymarket";
 
-export function useQuestions() {
+/** Every question. Reading them all is one call per question, so the list refreshes only where it is shown. */
+export function useQuestions(live = true) {
   return useQuery({
     queryKey: ["questions"],
     queryFn: async () => {
@@ -16,7 +17,8 @@ export function useQuestions() {
       const all = await Promise.all(Array.from({ length: n }, (_, i) => getQuestion(i + 1)));
       return all.reverse();
     },
-    refetchInterval: 15_000,
+    refetchInterval: live ? 60_000 : false,
+    staleTime: live ? 2_000 : Infinity,
   });
 }
 

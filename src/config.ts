@@ -14,4 +14,4 @@ export const EXPLORER_URL = env.VITE_EXPLORER_URL ?? "https://testnet.nearblocks
 export const POLYMARKET_API = env.VITE_POLYMARKET_API ?? "https://gamma-api.polymarket.com";
 
 /** How long a quote, a price or a balance is shown before it is read again. */
-export const REFRESH_MS = 5_000;
+export const REFRESH_MS = 8_000;

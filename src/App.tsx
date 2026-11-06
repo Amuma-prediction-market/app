@@ -46,7 +46,8 @@ function useWalletReturn() {
 
 export function App() {
   const route = useRoute();
-  const questions = useQuestions();
+  // the header only needs the collateral, which never changes, so off the home page the list is read once
+  const questions = useQuestions(route.page === "home");
   useWalletReturn();
   // every question uses the same collateral today; the header shows the balance in it
   const collateral = questions.data?.find((q) => q.opened)?.collateral;
