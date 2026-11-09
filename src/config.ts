@@ -16,6 +16,8 @@ export const GAS_FAUCET_URL = env.VITE_GAS_FAUCET_URL ?? "https://aimm-arb-bot.j
 export const EXPLORER_URL = env.VITE_EXPLORER_URL ?? "https://testnet.nearblocks.io";
 /** Polymarket's public market data, shown beside AIMM's prices for the questions this app mirrors. */
 export const POLYMARKET_API = env.VITE_POLYMARKET_API ?? "https://gamma-api.polymarket.com";
+/** Polymarket's order-book API, for its price history. */
+export const POLYMARKET_CLOB = env.VITE_POLYMARKET_CLOB ?? "https://clob.polymarket.com";
 
 /** How long a quote, a price or a balance is shown before it is read again. */
 export const REFRESH_MS = 8_000;

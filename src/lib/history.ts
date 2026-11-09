@@ -13,7 +13,6 @@ export interface HistoryPoint {
 
 /** Readings across the window to find the opening, then readings across the open stretch for the chart. */
 const SCAN = 8;
-const SAMPLES = 20;
 const CONCURRENCY = 2;
 /** Pause after each read, to stay well inside a public node's rate limit. */
 const SPACING_MS = 250;
@@ -83,6 +82,14 @@ async function pool<T, R>(items: T[], f: (x: T) => Promise<R>): Promise<R[]> {
 
 const snap = (h: number) => Math.floor(h / GRID) * GRID;
 const spread = (a: number, b: number, n: number) => [...new Set(Array.from({ length: n }, (_, i) => snap(a + ((b - a) * i) / (n - 1))))];
+/** About `n` heights from `a` to `b` on fixed multiples of a step, so that as `b` moves on, the heights already read stay
+ * the same and come from the cache. */
+const steps = (a: number, b: number, n: number) => {
+  const step = Math.max(GRID, Math.ceil((b - a) / n / GRID) * GRID);
+  const out: number[] = [];
+  for (let h = Math.ceil(a / step) * step; h <= b; h += step) out.push(h);
+  return out;
+};
 
 /** A block at or just after `height`: the chain skips a height now and then. */
 async function blockNear(height: number) {
@@ -95,8 +102,8 @@ async function blockNear(height: number) {
   }
 }
 
-/** About SAMPLES evenly spaced readings from the question's opening to its close, or to now while it trades. */
-export async function loadHistory(id: number, closeTime: number): Promise<HistoryPoint[]> {
+/** About `samples` evenly spaced readings from the question's opening to its close, or to now while it trades. */
+export async function loadHistory(id: number, closeTime: number, samples: number): Promise<HistoryPoint[]> {
   const latest = await block(LATEST);
   // the block rate from a day's worth of blocks; times are interpolated from it, close enough for a chart's axis
   const earlier = await blockNear(snap(latest.height - 86_400));
@@ -115,14 +122,14 @@ export async function loadHistory(id: number, closeTime: number): Promise<Histor
   // a question that opened an hour ago needs as fine a start as one that opened days ago
   let lo = first > 0 ? scan[first - 1]!.height : scan[0]!.height;
   let hi = scan[first]!.height;
-  for (let k = 0; k < 20 && first > 0 && hi - lo > Math.max(1, (end - lo) / (2 * SAMPLES)); k++) {
+  for (let k = 0; k < 20 && first > 0 && hi - lo > Math.max(1, (end - lo) / (2 * samples)); k++) {
     const mid = Math.floor((lo + hi) / 2);
     if ((await readingAt(id, mid)).r) hi = mid;
     else lo = mid;
   }
 
   // while it trades, the chart runs up to the newest block
-  const heights = [hi, ...spread(hi, end, SAMPLES).filter((h) => h > hi), ...(live && latest.height - 2 > end ? [latest.height - 2] : [])];
+  const heights = [hi, ...steps(hi, end, samples).filter((h) => h > hi), ...(live && latest.height - 2 > end ? [latest.height - 2] : [])];
   const readings = await pool(heights, (h) => readingAt(id, h));
   return readings
     .filter((s): s is { height: number; r: NonNullable<Reading> } => s.r !== null)

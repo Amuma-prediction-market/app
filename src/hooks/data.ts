@@ -6,7 +6,8 @@ import { getQuestion, holdings, pendingOf, phaseOf, questionCount, type Question
 import { nearBalance } from "../near/rpc";
 import { isRegistered, registrationCost, tokenBalance, tokenMeta } from "../near/token";
 import { loadHistory } from "../lib/history";
-import { polymarketPrices, slugFor } from "../lib/polymarket";
+import { splitTitle } from "../lib/format";
+import { polymarketHistory, polymarketPrices, slugFor } from "../lib/polymarket";
 
 /** Every question. Reading them all is one call per question, so the list refreshes only where it is shown. */
 export function useQuestions(live = true) {
@@ -75,11 +76,12 @@ export function useHistory(q: Question | undefined) {
   const live = q ? phaseOf(q) === "trading" : false;
   return useQuery({
     queryKey: ["history", q?.id],
-    queryFn: () => loadHistory(q!.id, q!.closeTime),
+    // a live question's recent blocks come from the regular node, which allows many more reads than the archival one
+    queryFn: () => loadHistory(q!.id, q!.closeTime, live ? 48 : 20),
     enabled: !!q && q.opened,
     // a settled question's past never changes; a live one gains a point now and then
     staleTime: live ? 120_000 : Infinity,
-    refetchInterval: live ? 300_000 : false,
+    refetchInterval: live ? 120_000 : false,
     // a failure is most likely the archival node's rate limit: try again in a minute rather than at once
     retry: 2,
     retryDelay: 60_000,
@@ -94,4 +96,18 @@ export function useNow(ms = 1_000): number {
     return () => clearInterval(t);
   }, [ms]);
   return now;
+}
+
+/** Polymarket's price history for one answer over the chart's time span. Replays ran on chain long after the real
+ * trading, so their times do not line up with Polymarket's and they get none. */
+export function usePolymarketHistory(q: Question | undefined, answer: number, from: number | undefined, to: number | undefined) {
+  const slug = q && !splitTitle(q.title).replay ? slugFor(q.title, q.closeTime) : null;
+  const label = q?.answers[answer];
+  return useQuery({
+    queryKey: ["polymarketHistory", slug, label, from && Math.floor(from / 600_000), to && Math.floor(to / 120_000)],
+    queryFn: ({ signal }) => polymarketHistory(slug!, label!, from!, to!, signal),
+    enabled: !!slug && !!label && !!from && !!to,
+    staleTime: 120_000,
+    retry: 1,
+  });
 }

@@ -1,5 +1,4 @@
-import { IntervalBar } from "./IntervalBar";
-import { formatCents, formatPercent, WAD } from "../lib/units";
+import { formatCents, formatPercent, WAD, wadToNumber } from "../lib/units";
 import type { Phase, Question } from "../near/aimm";
 
 export interface Selection {
@@ -7,7 +6,11 @@ export interface Selection {
   yes: boolean;
 }
 
-/** Every answer of the question: its price, its information interval, and a YES and a NO to buy. */
+/** An interval narrower than this is the price itself, to the precision shown. */
+const POINT = 0.0005;
+
+/** Every answer of the question: its price, its information interval and Polymarket's price as numbers, and a YES and a
+ * NO to buy. Clicking an answer charts it. */
 export function Ladder({
   q,
   phase,
@@ -27,47 +30,49 @@ export function Ladder({
     <div className="card">
       <div className="ladder-head">
         <span>Answer</span>
-        <span style={{ textAlign: "right" }}>Chance</span>
-        <span className="legend">
-          <span>
-            <span className="swatch" style={{ background: "var(--accent-soft)", border: "1px solid var(--accent)" }} />
-            Information interval
-          </span>
-          {poly && (
-            <span>
-              <span
-                className="swatch"
-                style={{ width: 0, height: 0, borderRadius: 0, borderLeft: "5px solid transparent", borderRight: "5px solid transparent", borderTop: "7px solid var(--poly)" }}
-              />
-              Polymarket
-            </span>
-          )}
-        </span>
+        <span style={{ textAlign: "right" }}>AIMM</span>
+        <span title="How far the price can be trusted, given what the pot can pay">Interval</span>
+        <span>{poly ? "Polymarket" : ""}</span>
         <span />
         <span />
       </div>
       {q.answers.map((answer, i) => {
         const price = q.prices[i] ?? 0n;
+        const [lo, hi] = q.intervals[i] ?? [price, price];
+        const width = wadToNumber(hi - lo);
+        const p = poly?.[i];
+        const gap = p != null ? (p - wadToNumber(price)) * 100 : null;
         const won = resolved && q.winner === i;
-        const cls = ["ladder-row", selected.range === i && trading ? "selected" : "", won ? "won" : "", resolved && !won ? "lost" : ""].join(" ");
+        const cls = ["ladder-row", selected.range === i && !resolved ? "selected" : "", won ? "won" : "", resolved && !won ? "lost" : ""].join(" ");
         return (
           <div className={cls} key={answer}>
-            <span className="answer-label">
+            <button className="answer-label" onClick={() => onSelect({ range: i, yes: selected.yes })} title="Chart this answer">
               {answer}
               {won && (
                 <span className="pill live" style={{ marginLeft: 8 }}>
                   Won
                 </span>
               )}
-            </span>
+            </button>
             <span className="price-big num">{resolved ? (won ? "100%" : "0%") : formatPercent(price)}</span>
-            {resolved ? (
-              <span className="small faint">{won ? "Winning tokens redeem at the payout" : ""}</span>
-            ) : q.prices.length ? (
-              <IntervalBar price={price} interval={q.intervals[i] ?? [price, price]} poly={poly?.[i]} />
+            {resolved || !q.prices.length ? (
+              <span className="small faint">{won ? "Winners redeem" : ""}</span>
+            ) : width < POINT ? (
+              <span className="small faint">Fully backed</span>
             ) : (
-              <span />
+              <span className="interval-text num">
+                {formatPercent(lo)} – {formatPercent(hi)}
+                <span className="tiny"> {(width * 100).toFixed(1)} pt wide</span>
+              </span>
             )}
+            <span className="poly-text num small">
+              {p != null && !resolved ? (
+                <>
+                  {(p * 100).toFixed(1)}%
+                  {gap !== null && Math.abs(gap) >= 0.05 && <span className="faint"> {gap > 0 ? "+" : "−"}{Math.abs(gap).toFixed(1)}</span>}
+                </>
+              ) : null}
+            </span>
             <button
               className={`side-btn yes ${selected.range === i && selected.yes && trading ? "active" : ""}`}
               disabled={!trading}
