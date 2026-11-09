@@ -372,7 +372,7 @@ button:disabled {
 .ladder-head,
 .ladder-row {
   display: grid;
-  grid-template-columns: minmax(110px, 1.1fr) 76px minmax(120px, 2fr) 92px 92px;
+  grid-template-columns: minmax(96px, 1fr) 72px minmax(112px, 1.1fr) minmax(88px, 0.9fr) 84px 84px;
   gap: 12px;
   align-items: center;
   padding: 10px 16px;
@@ -398,7 +398,16 @@ button:disabled {
   opacity: 0.6;
 }
 .answer-label {
+  font: inherit;
   font-weight: 600;
+  color: var(--ink);
+  background: none;
+  border: 0;
+  padding: 0;
+  text-align: left;
+}
+.answer-label:hover {
+  color: var(--accent);
 }
 .price-big {
   font-size: 18px;
@@ -432,7 +441,7 @@ button:disabled {
   }
   .ladder-row {
     grid-template-columns: 1fr 1fr;
-    grid-template-areas: "label price" "bar bar" "yes no";
+    grid-template-areas: "label price" "interval poly" "yes no";
     row-gap: 8px;
   }
   .topbar-inner {
@@ -449,66 +458,31 @@ button:disabled {
     grid-area: price;
   }
   .ladder-row > :nth-child(3) {
-    grid-area: bar;
+    grid-area: interval;
   }
   .ladder-row > :nth-child(4) {
-    grid-area: yes;
+    grid-area: poly;
+    text-align: right;
   }
   .ladder-row > :nth-child(5) {
+    grid-area: yes;
+  }
+  .ladder-row > :nth-child(6) {
     grid-area: no;
   }
 }
 
-/* the information interval: a 0–100% track, the band the price can be trusted to, the price, and Polymarket's */
-.ibar {
-  position: relative;
-  height: 24px;
-}
-.ibar .track {
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 14px;
-  height: 4px;
-  border-radius: 2px;
-  background: var(--surface-2);
-}
-.ibar .band {
-  position: absolute;
-  top: 11px;
-  height: 10px;
-  border-radius: 3px;
-  background: var(--accent-soft);
-  border: 1px solid var(--accent);
-  min-width: 2px;
-}
-.ibar .tick {
-  position: absolute;
-  top: 9px;
-  width: 2px;
-  height: 14px;
-  border-radius: 1px;
-  background: var(--ink);
-  transform: translateX(-1px);
-}
-/* Polymarket: a small triangle above the track, pointing down at its price */
-.ibar .poly {
-  position: absolute;
-  top: 0;
-  width: 0;
-  height: 0;
-  border-left: 5px solid transparent;
-  border-right: 5px solid transparent;
-  border-top: 7px solid var(--poly);
-  transform: translateX(-5px);
-}
-.ibar-caption {
+.interval-text {
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 600;
   display: flex;
-  justify-content: space-between;
-  gap: 8px;
-  font-size: 12px;
+  flex-direction: column;
+  line-height: 1.25;
+}
+.interval-text .tiny {
+  font-weight: 400;
   color: var(--ink-3);
-  margin-top: 2px;
 }
 .poly-text {
   color: var(--poly);

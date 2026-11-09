@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { AIMM_CONTRACT, EXPLORER_URL } from "../config";
-import { useHistory, useNow, usePolymarket, useQuestion, useTokenMeta } from "../hooks/data";
+import { useHistory, useNow, usePolymarket, usePolymarketHistory, useQuestion, useTokenMeta } from "../hooks/data";
 import { cityOf, dateTime, splitTitle, timeLeft } from "../lib/format";
 import { slugFor } from "../lib/polymarket";
 import { phaseOf } from "../near/aimm";
@@ -18,6 +18,11 @@ export function MarketPage({ id }: { id: number }) {
   const history = useHistory(q);
   const now = useNow();
   const [picked, setPicked] = useState<Selection | null>(null);
+  // the answer shown first: the winner once there is one, else the likeliest
+  const leader = q ? (q.winner ?? q.prices.reduce((best, p, i) => (p > (q.prices[best] ?? 0n) ? i : best), 0)) : 0;
+  const selection = picked ?? { range: leader, yes: true };
+  const span = history.data && history.data.length > 1 ? history.data : null;
+  const polyHistory = usePolymarketHistory(q, selection.range, span?.[0]?.time, span?.[span.length - 1]?.time);
   const [side, setSide] = useState<Side>("buy");
   const panel = useRef<HTMLElement>(null);
 
@@ -27,9 +32,6 @@ export function MarketPage({ id }: { id: number }) {
   const phase = phaseOf(q, now);
   const { title, replay } = splitTitle(q.title);
   const { decimals, symbol } = meta.data;
-  // the answer shown first: the winner once there is one, else the likeliest
-  const leader = q.winner ?? q.prices.reduce((best, p, i) => (p > (q.prices[best] ?? 0n) ? i : best), 0);
-  const selection = picked ?? { range: leader, yes: true };
   const slug = slugFor(q.title, q.closeTime);
   // on a phone the form sits below the answers, so picking one brings the form into view
   const pick = (s: Selection, to: Side) => {
@@ -70,7 +72,7 @@ export function MarketPage({ id }: { id: number }) {
           ) : history.isError ? (
             <div className="card card-pad small faint">The price history could not be read from the archival node just now; it will try again.</div>
           ) : history.data && history.data.length > 1 ? (
-            <PriceChart q={q} points={history.data} selected={selection.range} />
+            <PriceChart q={q} points={history.data} selected={selection.range} poly={polyHistory.data} />
           ) : null}
 
           <Ladder q={q} phase={phase} poly={poly.data} selected={selection} onSelect={(s) => pick(s, "buy")} />
