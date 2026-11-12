@@ -55,9 +55,11 @@ async function readingAt(id: number, height: number): Promise<{ height: number; 
       return { height: h, r };
     } catch (e) {
       if (e instanceof RpcError && /UNKNOWN_BLOCK|DB Not Found/i.test(e.message)) continue;
-      // only "not there yet" is an answer: the contract saying so, or the node holding no state that far back
-      // (MissingTrieValue); anything else is a failure to read
-      if (!(e instanceof RpcError) || !/no such question|GuestPanic|CodeDoesNotExist|MethodNotFound|MissingTrieValue/i.test(e.message)) throw e;
+      // a node holding no state that far back (MissingTrieValue, even after the archival node was asked) reads as
+      // "not open" for this load, but is not kept: it says nothing about the question, and a later load may find it
+      if (e instanceof RpcError && /MissingTrieValue/i.test(e.message)) return { height: h, r: null };
+      // only "not there yet" is an answer to keep: the contract saying so; anything else is a failure to read
+      if (!(e instanceof RpcError) || !/no such question|GuestPanic|CodeDoesNotExist|MethodNotFound/i.test(e.message)) throw e;
       keep(id, h, null);
       return { height: h, r: null };
     }
@@ -65,12 +67,15 @@ async function readingAt(id: number, height: number): Promise<{ height: number; 
   return { height, r: null };
 }
 
-async function pool<T, R>(items: T[], f: (x: T) => Promise<R>): Promise<R[]> {
+/** Reads `items` a few at a time. Once `signal` is aborted (the page was left) it starts no more, so the next page's
+ * reads do not queue behind them. */
+async function pool<T, R>(items: T[], f: (x: T) => Promise<R>, signal?: AbortSignal): Promise<R[]> {
   const out: R[] = new Array(items.length);
   let next = 0;
   await Promise.all(
     Array.from({ length: CONCURRENCY }, async () => {
       while (next < items.length) {
+        signal?.throwIfAborted();
         const i = next++;
         out[i] = await f(items[i]!);
         await new Promise((r) => setTimeout(r, SPACING_MS));
@@ -103,7 +108,7 @@ async function blockNear(height: number) {
 }
 
 /** About `samples` evenly spaced readings from the question's opening to its close, or to now while it trades. */
-export async function loadHistory(id: number, closeTime: number, samples: number): Promise<HistoryPoint[]> {
+export async function loadHistory(id: number, closeTime: number, samples: number, signal?: AbortSignal): Promise<HistoryPoint[]> {
   const latest = await block(LATEST);
   // the block rate from a day's worth of blocks; times are interpolated from it, close enough for a chart's axis
   const earlier = await blockNear(snap(latest.height - 86_400));
@@ -114,7 +119,7 @@ export async function loadHistory(id: number, closeTime: number, samples: number
   // trading stops at the close, and once the result is in the contract no longer reports prices
   const live = latest.height - 2 < heightAt(closeTime) - 1;
   const end = snap(Math.min(latest.height - 2, heightAt(closeTime) - 1));
-  const scan = await pool(spread(Math.max(1, end - Math.round(WINDOW_MS / msPerBlock)), end, SCAN), (h) => readingAt(id, h));
+  const scan = await pool(spread(Math.max(1, end - Math.round(WINDOW_MS / msPerBlock)), end, SCAN), (h) => readingAt(id, h), signal);
   const first = scan.findIndex((s) => s.r !== null);
   if (first < 0) return [];
 
@@ -123,6 +128,7 @@ export async function loadHistory(id: number, closeTime: number, samples: number
   let lo = first > 0 ? scan[first - 1]!.height : scan[0]!.height;
   let hi = scan[first]!.height;
   for (let k = 0; k < 20 && first > 0 && hi - lo > Math.max(1, (end - lo) / (2 * samples)); k++) {
+    signal?.throwIfAborted();
     const mid = Math.floor((lo + hi) / 2);
     if ((await readingAt(id, mid)).r) hi = mid;
     else lo = mid;
@@ -130,7 +136,7 @@ export async function loadHistory(id: number, closeTime: number, samples: number
 
   // while it trades, the chart runs up to the newest block
   const heights = [hi, ...steps(hi, end, samples).filter((h) => h > hi), ...(live && latest.height - 2 > end ? [latest.height - 2] : [])];
-  const readings = await pool(heights, (h) => readingAt(id, h));
+  const readings = await pool(heights, (h) => readingAt(id, h), signal);
   return readings
     .filter((s): s is { height: number; r: NonNullable<Reading> } => s.r !== null)
     .map(({ height, r }) => ({

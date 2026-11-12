@@ -4,10 +4,31 @@ export function cityOf(title: string): string | null {
   return title.match(/^Highest temperature in (.+?) on /)?.[1] ?? null;
 }
 
-/** The title without the replay note, and whether it was a replay of past Polymarket trading. */
-export function splitTitle(title: string): { title: string; replay: boolean } {
+/** The cities the site trades, each on its own page: `slug` is its address (#/new-york), `inTitle` how the question
+ * titles name it. */
+export const CITIES = [
+  { slug: "new-york", name: "New York", inTitle: "NYC" },
+  { slug: "london", name: "London", inTitle: "London" },
+] as const;
+export type City = (typeof CITIES)[number];
+
+export const cityBySlug = (slug: string): City | null => CITIES.find((c) => c.slug === slug) ?? null;
+
+/** The site's city for a question title, or null for a question about something else. */
+export const cityOfTitle = (title: string): City | null => {
+  const named = cityOf(title);
+  return CITIES.find((c) => c.inTitle === named) ?? null;
+};
+
+/** The title as people read it: without the replay note, with the city's own name ("New York", not the contract's
+ * "NYC"), plus the day it is about ("November 11") and whether it was a replay of past Polymarket trading. */
+export function splitTitle(title: string): { title: string; date: string | null; replay: boolean } {
   const m = title.match(/^(.*?)\s*\((replay[^)]*)\)\s*$/i);
-  return m ? { title: m[1]!, replay: true } : { title, replay: false };
+  const bare = m ? m[1]! : title;
+  const city = cityOfTitle(bare);
+  const shown = city ? bare.replace(`in ${city.inTitle} on `, `in ${city.name} on `) : bare;
+  const date = bare.match(/^Highest temperature in .+? on (.+?)\??$/)?.[1] ?? null;
+  return { title: shown, date, replay: !!m };
 }
 
 export function timeLeft(ms: number): string {

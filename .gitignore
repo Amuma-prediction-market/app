@@ -4,3 +4,8 @@ dist
 .env.local
 .DS_Store
 .wrangler
+# local secrets: Wrangler's .dev.vars and any .env file, here or in bot/ (the example stays tracked)
+.dev.vars*
+.env
+.env.*
+!.env.example

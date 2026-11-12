@@ -5,7 +5,7 @@ import { useFaucet } from "../hooks/useFaucet";
 import { GAS_NEEDED, isEthAccount, useGasFaucet } from "../hooks/useGasFaucet";
 import { formatUnits } from "../lib/units";
 import { shortAccount } from "../lib/format";
-import { useWallet } from "../near/wallet";
+import { hasInjectedWallet, isPhone, metaMaskAppLink, useWallet } from "../near/wallet";
 
 export function Header({ collateral }: { collateral: string | undefined }) {
   const wallet = useWallet();
@@ -33,7 +33,7 @@ export function Header({ collateral }: { collateral: string | undefined }) {
               <path d="M5 25h22M9.5 19l6.5-11 6.5 11" stroke="white" strokeWidth="4" fill="none" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </span>
-          AIMM <span className="faint brand-sub" style={{ fontWeight: 500 }}>Weather</span>
+          Amuma <span className="faint brand-sub" style={{ fontWeight: 500 }}>Weather</span>
         </a>
         <span className="pill net-pill">NEAR testnet</span>
         <span className="spacer" />
@@ -55,7 +55,7 @@ export function Header({ collateral }: { collateral: string | undefined }) {
                       Get testnet NEAR for gas
                     </button>
                   )}
-                  <button onClick={() => (setOpen(false), faucet.run())} disabled={!faucet.ready}>
+                  <button onClick={() => (setOpen(false), faucet.run())} disabled={!faucet.ready} title={faucet.needsGas ? "Get testnet NEAR for gas first" : undefined}>
                     Get 1,000 test {meta.data?.symbol ?? "dollars"}
                   </button>
                   <a href={`${EXPLORER_URL}/address/${wallet.accountId}`} target="_blank" rel="noreferrer">
@@ -66,10 +66,29 @@ export function Header({ collateral }: { collateral: string | undefined }) {
               )}
             </div>
           </>
-        ) : (
-          <button className="btn primary" onClick={wallet.signIn} disabled={!wallet.ready}>
-            Connect wallet
+        ) : wallet.failed ? (
+          <button className="btn primary" onClick={() => window.location.reload()}>
+            Reload to connect wallet
           </button>
+        ) : (
+          <>
+            {/* A phone browser has no MetaMask in it, and the wallet list cannot say so (its descriptions are hidden),
+                so offer the MetaMask app's own browser here. Meteor still works from the Connect button. */}
+            {isPhone() && !hasInjectedWallet() && (
+              <a
+                className="small"
+                href={metaMaskAppLink()}
+                // the routes live in the hash, so take the page the user is on when they tap, not when this rendered
+                onClick={(e) => (e.currentTarget.href = metaMaskAppLink())}
+                title="Opens this page in the MetaMask app's browser"
+              >
+                Open in MetaMask
+              </a>
+            )}
+            <button className="btn primary" onClick={wallet.signIn} disabled={!wallet.ready}>
+              Connect wallet
+            </button>
+          </>
         )}
       </div>
     </header>
