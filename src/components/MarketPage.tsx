@@ -99,9 +99,9 @@ export function MarketPage({ id }: { id: number }) {
               ever does not.
             </div>
             <div>
-              The <strong>information interval</strong> beside each price is what the price tells you once that payout is taken into account. While
+              The <strong>prediction range</strong> beside each price is what the price tells you once that payout is taken into account. While
               the pot covers every answer it is the price itself; when it does not, it widens to show how far the price can be trusted. A trader who
-              believes the chance is above the interval buys Yes; below it, No.
+              believes the chance is above the range buys Yes; below it, No.
             </div>
             <div className="faint">
               Resolved by {q.resolver} with Polymarket's result after the close. Contract{" "}

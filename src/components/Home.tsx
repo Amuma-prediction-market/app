@@ -16,7 +16,7 @@ export function Home() {
         <h1>Trade tomorrow's high temperature</h1>
         <p>
           The operator backs each question with a small fund, yet Amuma prices it as deep as a market many times larger. Next
-          to every price, Amuma publishes its information interval: how far that price can be trusted, given what the pot
+          to every price, Amuma publishes its prediction range: how far that price can be trusted, given what the pot
           can pay.
         </p>
       </section>

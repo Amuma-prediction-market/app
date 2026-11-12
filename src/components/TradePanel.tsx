@@ -314,7 +314,7 @@ export function TradePanel({
           <div className="notice warn">
             This buy would leave the pot short of {yes ? answer : "these answers"}'s winners: each winning token would be paid{" "}
             {formatPayout(payoutAfter)}, not {formatPayout(payoutNow)}, until more money comes in. That is how Amuma backs a deep market with a small fund,
-            and why the information interval widens.
+            and why the prediction range widens.
           </div>
         )}
         {side === "buy" && buy && (

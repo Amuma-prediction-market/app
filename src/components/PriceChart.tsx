@@ -7,7 +7,7 @@ import type { Question } from "../near/aimm";
 const H = 260;
 const PAD = { l: 44, r: 12, t: 12, b: 28 };
 
-/** One answer over time: AIMM's information interval as a band, AIMM's price as a line, Polymarket's traded price as a
+/** One answer over time: AIMM's prediction range as a band, AIMM's price as a line, Polymarket's traded price as a
  * dashed line. The axis is zoomed to the data, so a band a few points wide is visible. AIMM's points are the contract's
  * state at past blocks; hovering shows the block. */
 export function PriceChart({ q, points, selected, poly }: { q: Question; points: HistoryPoint[]; selected: number; poly: PricePoint[] | undefined }) {
@@ -83,7 +83,7 @@ export function PriceChart({ q, points, selected, poly }: { q: Question; points:
         <div className="legend">
           <span>
             <span className="swatch" style={{ background: "var(--accent-soft)", border: "1px solid var(--accent)" }} />
-            Information interval{nowWidth >= 0.05 ? `, now ${nowWidth.toFixed(1)} pt wide` : ", now the price itself"}
+            Prediction range{nowWidth >= 0.05 ? `, now ${nowWidth.toFixed(1)} pt wide` : ", now the price itself"}
           </span>
           <span>
             <span className="swatch line" style={{ background: "var(--accent)" }} />
@@ -103,7 +103,7 @@ export function PriceChart({ q, points, selected, poly }: { q: Question; points:
           height={H}
           viewBox={`0 0 ${w} ${H}`}
           role="img"
-          aria-label={`${q.answers[selected]}: Amuma's price and information interval${pm.length ? " and Polymarket's price" : ""} over time`}
+          aria-label={`${q.answers[selected]}: Amuma's price and prediction range${pm.length ? " and Polymarket's price" : ""} over time`}
           onPointerMove={onMove}
           onPointerLeave={() => setHover(null)}
           style={{ display: "block", touchAction: "pan-y" }}
@@ -149,7 +149,7 @@ export function PriceChart({ q, points, selected, poly }: { q: Question; points:
               <span>{hp.price.toFixed(1)}%</span>
             </div>
             <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
-              <span>Interval</span>
+              <span>Range</span>
               <span>{hp.hi - hp.lo < 0.05 ? "the price" : `${hp.lo.toFixed(1)} – ${hp.hi.toFixed(1)}%`}</span>
             </div>
             {pmAt(hp.time) !== null && (

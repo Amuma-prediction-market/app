@@ -10,7 +10,7 @@ export interface Selection {
 /** An interval narrower than this is the price itself, to the precision shown. */
 const POINT = 0.0005;
 
-/** Every answer of the question: its price, its information interval and Polymarket's price as numbers, and a YES and a
+/** Every answer of the question: its price, its prediction range and Polymarket's price as numbers, and a YES and a
  * NO to buy. Clicking an answer charts it. */
 export function Ladder({
   q,
@@ -35,7 +35,7 @@ export function Ladder({
       <div className="ladder-head">
         <span>Answer</span>
         <span style={{ textAlign: "right" }}>Amuma</span>
-        <span title="How far the price can be trusted, given what the pot can pay">Interval</span>
+        <span title="How far the price can be trusted, given what the pot can pay">Range</span>
         <span title="Polymarket's best bid and ask; Amuma inside them matches Polymarket">{poly ? "Polymarket bid–ask" : ""}</span>
         <span />
         <span />
@@ -65,7 +65,7 @@ export function Ladder({
             ) : (
               <span className="interval-text num">
                 {/* a phone hides the column heads, so each cell carries its own */}
-                <span className="cell-label">Interval</span>
+                <span className="cell-label">Range</span>
                 {formatPercent(lo)} – {formatPercent(hi)}
                 <span className="tiny"> {(width * 100).toFixed(1)} pt wide</span>
               </span>

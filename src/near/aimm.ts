@@ -63,7 +63,7 @@ export interface Question {
   pot: bigint;
   /** WAD, one per answer; empty once resolved. */
   prices: bigint[];
-  /** WAD [lower, upper], one per answer: the information interval. */
+  /** WAD [lower, upper], one per answer: the prediction range. */
   intervals: [bigint, bigint][];
   /** WAD, what a winning YES on each answer would be paid if it won now. */
   payouts: bigint[];
