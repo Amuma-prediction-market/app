@@ -33,9 +33,12 @@ export function PriceChart({ q, points, selected, poly }: { q: Question; points:
   const values = [...rows.flatMap((r) => [r.lo, r.hi, r.price]), ...pm.map((p) => p.price)];
   const vmin = Math.min(...values);
   const vmax = Math.max(...values);
+  // the axis spans at least 20 points, in steps of 5, so a gap of a point looks like a point
   const pad = Math.max(1, (vmax - vmin) * 0.12);
-  const y0 = Math.max(0, Math.floor(vmin - pad));
-  const y1 = Math.min(100, Math.ceil(vmax + pad));
+  const span = Math.min(100, Math.max(20, Math.ceil((vmax - vmin + 2 * pad + 5) / 20) * 20));
+  const mid = (vmin + vmax) / 2;
+  const y0 = Math.min(100 - span, Math.max(0, Math.round((mid - span / 2) / 5) * 5));
+  const y1 = y0 + span;
   const x = (t: number) => PAD.l + ((t - t0) / Math.max(1, t1 - t0)) * (w - PAD.l - PAD.r);
   const y = (v: number) => PAD.t + (1 - (v - y0) / Math.max(1e-9, y1 - y0)) * (H - PAD.t - PAD.b);
 
