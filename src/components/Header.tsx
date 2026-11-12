@@ -83,7 +83,7 @@ export function Header({ collateral }: { collateral: string | undefined }) {
   );
 }
 
-/** A NEAR testnet account name, as the bot's faucet accepts it: name.testnet, or a 64-digit implicit account. */
+/** A NEAR testnet account name, as the gas faucet accepts it: name.testnet, or a 64-digit implicit account. */
 const isTestnetName = (id: string) => /^[0-9a-f]{64}$/.test(id) || (id.length <= 64 && /^([a-z0-9]+[-_])*[a-z0-9]+(\.([a-z0-9]+[-_])*[a-z0-9]+)*\.testnet$/.test(id));
 
 /** Connecting a wallet costs a little gas (Meteor adds a sign-in key), which a brand-new wallet does not have, and the

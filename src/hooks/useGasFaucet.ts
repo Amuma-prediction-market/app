@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useToast } from "../components/Toasts";
 import { EXPLORER_URL, GAS_FAUCET_URL } from "../config";
 
-/** A new testnet account may hold no NEAR, so the bot Worker sends it a little for gas. */
+/** A new testnet account may hold no NEAR, so the gas faucet sends it a little. */
 export const GAS_NEEDED = 5n * 10n ** 22n; // 0.05 NEAR, the faucet's own threshold
 
 export const isEthAccount = (id: string | null) => !!id && /^0x[0-9a-f]{40}$/.test(id);

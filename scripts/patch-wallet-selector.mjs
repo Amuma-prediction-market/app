@@ -17,7 +17,7 @@ const BROKEN = "allowance: fc.allowance ? fc.allowance.toString() : undefined";
 const FIXED = "allowance: fc.allowance != null ? fc.allowance.toString() : undefined";
 
 if (!existsSync(core)) {
-  // nothing installed here (for example the bot's own install); nothing to fix
+  // nothing installed here (for example a partial install); nothing to fix
   process.exit(0);
 }
 

@@ -36,7 +36,7 @@ npm run dev
 ```
 
 Open http://localhost:5173 and connect a Meteor wallet with a testnet account. Connecting costs a little gas, which a
-new account does not have: "New wallet? Get free gas", next to Connect wallet, asks the bot Worker's faucet for 0.25
+new account does not have: "New wallet? Get free gas", next to Connect wallet, asks a faucet for 0.25
 testnet NEAR by account name, and the trade form offers the same once connected. The account menu's faucet registers
 your account with tUSD, the test dollar, and mints 1,000, in one approval. A little testnet NEAR pays the token's
 storage deposit.
@@ -67,17 +67,11 @@ reads are spaced a second apart, and every reading is kept in the browser, becau
 Amounts stay as bigint from the contract to the screen, so nothing is rounded before it is shown. The wallet SDKs are
 loaded after the first render, which keeps the first load near 100 KB gzipped.
 
-## The arbitrage bot
-
-The bot is its own repository, `Amuma-prediction-market/bot`: a Cloudflare Worker that opens each day's questions,
-trades them toward Polymarket's prices every two minutes, so the prices move the way a live market's would, and runs
-the gas faucet. Its README says how to deploy it and give it its keys.
-
 ## New questions
 
-The bot opens each city's questions for today and tomorrow by itself, at Polymarket's prices; `demo/open_live.py` in
-`Amuma-prediction-market/aimm` does the same by hand. The app finds questions on the chain by itself, so a new day needs
-no change here.
+Each city's questions for today and tomorrow open by themselves, at Polymarket's prices, and an arbitrageur keeps them in
+line with Polymarket as traders would on a live market. `demo/open_live.py` in `Amuma-prediction-market/aimm` opens one by
+hand. The app finds questions on the chain by itself, so a new day needs no change here.
 
 ## Licence
 
