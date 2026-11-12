@@ -864,3 +864,73 @@ button:disabled {
   font-weight: 750;
   color: var(--accent);
 }
+
+/* "New wallet? Get free gas", next to Connect wallet */
+.btn.gas-first {
+  background: none;
+  border-color: transparent;
+  color: var(--ink-2);
+  font-weight: 500;
+  margin-right: 6px;
+}
+.btn.gas-first:hover {
+  color: var(--ink);
+}
+.menu-pop.gas-pop {
+  width: 280px;
+  gap: 10px;
+  padding: 14px;
+}
+.menu-pop.gas-pop p {
+  margin: 0;
+  color: var(--ink-2);
+}
+.menu-pop.gas-pop .input {
+  width: 100%;
+  padding: 9px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 14px;
+}
+.menu-pop.gas-pop .input:focus {
+  outline: 2px solid var(--accent-soft);
+  border-color: var(--accent);
+}
+.menu-pop.gas-pop button.btn {
+  text-align: center;
+  padding: 10px;
+}
+.menu-pop.gas-pop button.btn.primary {
+  background: var(--accent);
+  color: #fff;
+}
+.menu-pop.gas-pop button.btn.primary:disabled {
+  opacity: 0.5;
+}
+.btn.gas-first .gas-short {
+  display: none;
+}
+@media (max-width: 640px) {
+  .btn.gas-first {
+    padding-left: 6px;
+    padding-right: 6px;
+    margin-right: 2px;
+  }
+  .btn.gas-first .gas-long {
+    display: none;
+  }
+  .btn.gas-first .gas-short {
+    display: inline;
+  }
+  /* the button sits mid-header on a phone, so the form spans the screen under the header instead of hanging off it */
+  .menu-pop.gas-pop {
+    position: fixed;
+    top: 60px;
+    left: 16px;
+    right: 16px;
+    width: auto;
+  }
+}

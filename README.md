@@ -1,10 +1,10 @@
 # AIMM Weather Markets
 
-**A trading app for AIMM, the Adaptive Information Market Maker, on NEAR testnet.** It lists the highest-temperature
+**A trading app for AIMM, the Automated Information Market Maker, on NEAR testnet.** It lists the highest-temperature
 questions for New York and London, mirrored from Polymarket. You can buy and sell YES and NO on every answer, and
 redeem once the result is in.
 
-The contract and its tests are in `Amuma-prediction-market/AIMM-rust`. This app only reads the chain and asks your wallet to sign.
+The contract and its tests are in `Amuma-prediction-market/aimm`. This app only reads the chain and asks your wallet to sign.
 It has no server, no indexer and no keys.
 
 ## What the screen shows
@@ -69,7 +69,7 @@ loaded after the first render, which keeps the first load near 100 KB gzipped.
 
 ## New questions
 
-The operator opens a question per city and day with `demo/open_live.py` in `Amuma-prediction-market/AIMM-rust`, at Polymarket's
+The operator opens a question per city and day with `demo/open_live.py` in `Amuma-prediction-market/aimm`, at Polymarket's
 prices. The app finds questions on the chain by itself, so a new day needs no change here.
 
 ## Licence
