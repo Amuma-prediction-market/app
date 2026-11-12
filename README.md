@@ -69,4 +69,4 @@ the first commit is from 6 November.
 
 ## Licence
 
-No licence is granted. All rights reserved.
+MIT. See [`LICENSE`](LICENSE).
