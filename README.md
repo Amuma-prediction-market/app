@@ -1,29 +1,6 @@
-# Amuma Weather Markets
+# Amuma
 
-**Amuma's trading site: tomorrow's high temperature in New York and London, priced by AIMM, the Automated Information
-Market Maker, on NEAR testnet.** Each question mirrors Polymarket's for the same city and day. You can buy and sell YES
-and NO on every answer, and redeem once the result is in.
-
-Live at [amuma-cv4.pages.dev](https://amuma-cv4.pages.dev).
-
-The contract, its tests and the whitepaper are in [`Amuma-prediction-market/aimm`](https://github.com/Amuma-prediction-market/aimm). This app only reads the chain and asks your wallet to sign.
-It has no server, no indexer and no keys.
-
-## What the screen shows
-
-| Element | What it is |
-|---|---|
-| Amuma | The curve's price for each answer, in percent; YES costs that many cents, NO the rest |
-| Interval | The information interval: how far the price can be trusted once the payout is taken into account. While the pot can pay every winner it is the price itself ("Fully backed"); when it cannot, it widens |
-| Polymarket bid–ask | Polymarket's quotes for the same answer, read live from its public API; the chart draws its midpoint, so you can see when Amuma's price sits away from it |
-| Operator's fund ℓ and L | The money actually put up, and the depth the curve prices at; AIMM prices like an L market on ℓ < L |
-| A winning token pays | min(1, pot ÷ winning tokens), the same for every winner whenever it bought |
-| Price history | The contract's own prices at past blocks, read from a NEAR node. Hover shows the block height, so every point can be checked |
-
-The trade form takes dollars. It estimates the tokens with the curve (`src/lib/curve.ts`), then asks the contract's
-`quote_buy` for the exact cost. Before you sign, it shows the tokens, the average price, the price after the trade, and
-what each token would be paid if it won. The purchase sends at most 1% above the quote, and the contract returns
-whatever it doesn't use in the same transaction.
+Demo at [amuma-cv4.pages.dev](https://amuma-cv4.pages.dev)
 
 ## Run it
 
@@ -69,12 +46,26 @@ reads are spaced a second apart, and every reading is kept in the browser, becau
 Amounts stay as bigint from the contract to the screen, so nothing is rounded before it is shown. The wallet SDKs are
 loaded after the first render, which keeps the first load near 100 KB gzipped.
 
-## New questions
+## Questions
 
-Each city's questions for today and tomorrow open at Polymarket's prices, and an arbitrageur keeps them in line with
-Polymarket as traders would on a live market. `demo/open_live.py` in
-[`Amuma-prediction-market/aimm`](https://github.com/Amuma-prediction-market/aimm) opens one by hand. The app finds
-questions on the chain by itself, so a new day needs no change here.
+The app lists whatever questions are on the contract and needs no change for a new one. In the demo, each day's
+questions open at the matching Polymarket market's prices, and an arbitrageur trades between the two as traders would
+on a live market. `demo/open_live.py` in
+[`Amuma-prediction-market/aimm`](https://github.com/Amuma-prediction-market/aimm) opens one by hand.
+
+## Built with
+
+| | |
+|---|---|
+| Interface | [React](https://react.dev) 19, [TanStack Query](https://tanstack.com/query) 5 |
+| Wallet and NEAR | [NEAR Wallet Selector](https://github.com/near/wallet-selector) 10 (core, modal, Meteor), `@near-js/transactions` 2, `buffer` |
+| Build and checks | [Vite](https://vite.dev) 8, TypeScript 6, Vitest 5, ESLint 10 |
+| AI-assisted code | Written with [Claude Code](https://claude.com/claude-code) (Anthropic) under the team's direction; commits it worked on carry its co-author line |
+
+## Hackathon
+
+Everything in this repository was built for the NEAR Hackathon, inside its window of 19 October to 14 November 2026:
+the first commit is from 6 November.
 
 ## Licence
 

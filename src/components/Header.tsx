@@ -33,7 +33,7 @@ export function Header({ collateral }: { collateral: string | undefined }) {
               <path d="M5 25h22M9.5 19l6.5-11 6.5 11" stroke="white" strokeWidth="4" fill="none" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </span>
-          Amuma <span className="faint brand-sub" style={{ fontWeight: 500 }}>Weather</span>
+          Amuma
         </a>
         <span className="pill net-pill">NEAR testnet</span>
         <span className="spacer" />

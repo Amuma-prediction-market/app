@@ -28,6 +28,6 @@ async function make() {
     modules: [setupMeteorWallet()],
   });
   // no limited-access key: every AIMM call that moves money needs 1 yoctoNEAR, which only the wallet can approve
-  const modal = setupModal(selector, { contractId: AIMM_CONTRACT, description: "Sign in to trade Amuma's weather questions on NEAR testnet." });
+  const modal = setupModal(selector, { contractId: AIMM_CONTRACT, description: "Sign in to trade on Amuma, on NEAR testnet." });
   return { selector, modal };
 }
