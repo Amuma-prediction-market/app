@@ -1,4 +1,4 @@
-/** The wallet: NEAR Wallet Selector, with Meteor and MetaMask (or any Ethereum wallet in the browser). Every transaction is signed in the wallet;
+/** The wallet: NEAR Wallet Selector, with Meteor. Every transaction is signed in the wallet;
  * the app never holds a key. */
 import type { WalletSelector } from "@near-wallet-selector/core";
 import type { WalletSelectorModal } from "@near-wallet-selector/modal-ui";

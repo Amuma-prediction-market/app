@@ -1,5 +1,5 @@
 import { useAccount, useTokenMeta } from "./data";
-import { GAS_NEEDED, isEthAccount } from "./useGasFaucet";
+import { GAS_NEEDED } from "./useGasFaucet";
 import { useTransaction } from "./useTransaction";
 import { faucetTx } from "../near/token";
 import { useWallet } from "../near/wallet";
@@ -10,8 +10,8 @@ export function useFaucet(token: string | undefined) {
   const meta = useTokenMeta(token);
   const account = useAccount(token, wallet.accountId);
   const tx = useTransaction();
-  // a new MetaMask account has no NEAR to pay the registration and gas with, so it gets gas first
-  const needsGas = !!account.data && isEthAccount(wallet.accountId) && account.data.near < GAS_NEEDED;
+  // an account without NEAR cannot pay the registration and gas, so it gets gas first
+  const needsGas = !!account.data && account.data.near < GAS_NEEDED;
   const ready = !!token && !!meta.data && !!account.data && !needsGas && !tx.pending && !wallet.busy;
   const run = () => {
     if (!ready) return;

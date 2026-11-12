@@ -2,10 +2,10 @@ import { useEffect, useRef, useState } from "react";
 import { EXPLORER_URL } from "../config";
 import { useAccount, useTokenMeta } from "../hooks/data";
 import { useFaucet } from "../hooks/useFaucet";
-import { GAS_NEEDED, isEthAccount, useGasFaucet } from "../hooks/useGasFaucet";
+import { GAS_NEEDED, useGasFaucet } from "../hooks/useGasFaucet";
 import { formatUnits } from "../lib/units";
 import { shortAccount } from "../lib/format";
-import { hasInjectedWallet, isPhone, metaMaskAppLink, useWallet } from "../near/wallet";
+import { useWallet } from "../near/wallet";
 
 export function Header({ collateral }: { collateral: string | undefined }) {
   const wallet = useWallet();
@@ -50,7 +50,7 @@ export function Header({ collateral }: { collateral: string | undefined }) {
               </button>
               {open && (
                 <div className="menu-pop card">
-                  {isEthAccount(wallet.accountId) && (account.data?.near ?? 0n) < GAS_NEEDED && (
+                  {(account.data?.near ?? 0n) < GAS_NEEDED && (
                     <button onClick={() => (setOpen(false), void gas.run())} disabled={gas.pending}>
                       Get testnet NEAR for gas
                     </button>
@@ -72,19 +72,7 @@ export function Header({ collateral }: { collateral: string | undefined }) {
           </button>
         ) : (
           <>
-            {/* A phone browser has no MetaMask in it, and the wallet list cannot say so (its descriptions are hidden),
-                so offer the MetaMask app's own browser here. Meteor still works from the Connect button. */}
-            {isPhone() && !hasInjectedWallet() && (
-              <a
-                className="small"
-                href={metaMaskAppLink()}
-                // the routes live in the hash, so take the page the user is on when they tap, not when this rendered
-                onClick={(e) => (e.currentTarget.href = metaMaskAppLink())}
-                title="Opens this page in the MetaMask app's browser"
-              >
-                Open in MetaMask
-              </a>
-            )}
+            <GasFirst />
             <button className="btn primary" onClick={wallet.signIn} disabled={!wallet.ready}>
               Connect wallet
             </button>
@@ -92,5 +80,49 @@ export function Header({ collateral }: { collateral: string | undefined }) {
         )}
       </div>
     </header>
+  );
+}
+
+/** A NEAR testnet account name, as the bot's faucet accepts it: name.testnet, or a 64-digit implicit account. */
+const isTestnetName = (id: string) => /^[0-9a-f]{64}$/.test(id) || (id.length <= 64 && /^([a-z0-9]+[-_])*[a-z0-9]+(\.([a-z0-9]+[-_])*[a-z0-9]+)*\.testnet$/.test(id));
+
+/** Connecting a wallet costs a little gas (Meteor adds a sign-in key), which a brand-new wallet does not have, and the
+ * faucet in the trade panel only shows once connected. So before connecting, anyone can ask the faucet for gas by
+ * typing their account's name. */
+function GasFirst() {
+  const [open, setOpen] = useState(false);
+  const [name, setName] = useState("");
+  const id = name.trim().toLowerCase();
+  const gas = useGasFaucet(isTestnetName(id) ? id : null);
+  const box = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const close = (e: MouseEvent) => {
+      if (!box.current?.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("click", close);
+    return () => document.removeEventListener("click", close);
+  }, []);
+  return (
+    <div className="menu" ref={box}>
+      <button className="btn gas-first" onClick={() => setOpen((o) => !o)} aria-expanded={open}>
+        <span className="gas-long">New wallet? Get free gas</span>
+        <span className="gas-short">Free gas</span>
+      </button>
+      {open && (
+        <form
+          className="menu-pop card gas-pop"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (isTestnetName(id)) void gas.run();
+          }}
+        >
+          <p className="small">Connecting costs a tiny bit of testnet NEAR, and a new wallet has none. Type your account and we send 0.25 NEAR, free.</p>
+          <input className="input" placeholder="yourname.testnet" value={name} onChange={(e) => setName(e.target.value)} autoFocus spellCheck={false} autoCapitalize="none" />
+          <button className="btn primary block" type="submit" disabled={!isTestnetName(id) || gas.pending}>
+            {gas.pending ? "Sending…" : "Send 0.25 testnet NEAR"}
+          </button>
+        </form>
+      )}
+    </div>
   );
 }
