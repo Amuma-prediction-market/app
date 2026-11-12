@@ -29,7 +29,7 @@ const refused = {
 // a sale whose payout the token refused: AIMM's sell went through, the detached ft_transfer failed, and on_paid kept the
 // money as pending
 const soldIntoPending = {
-  transaction: { hash: "9Qx", signer_id: "0x1111111111111111111111111111111111111111" },
+  transaction: { hash: "9Qx", signer_id: "trader.testnet" },
   receipts_outcome: [
     {
       outcome: {
@@ -71,7 +71,7 @@ describe("outcome", () => {
   it("reads the trade and the pending payout when only the payout transfer failed", () => {
     expect(aimmEvents(soldIntoPending).map((e) => e.event)).toEqual(["sell", "payment_failed"]);
     expect(failureOf(soldIntoPending)).toBe("Smart contract panicked: The account 0x11 is not registered");
-    expect(signerOf(soldIntoPending)).toBe("0x1111111111111111111111111111111111111111");
+    expect(signerOf(soldIntoPending)).toBe("trader.testnet");
     expect(signerOf(refused)).toBeNull();
   });
 
@@ -83,7 +83,7 @@ describe("outcome", () => {
 });
 
 describe("walletErrorText", () => {
-  // what MetaMask's library throws when the called contract fails: parseRpcError's message is the failure as JSON
+  // what a wallet library may throw when the called contract fails: the failure as JSON
   const nested = (panic: string) =>
     new Error(JSON.stringify({ index: 0, kind: { index: 0, kind: { FunctionCallError: { ExecutionError: `Smart contract panicked: ${panic}` } } } }));
 
@@ -91,12 +91,10 @@ describe("walletErrorText", () => {
     expect(walletErrorText(nested("AIMM: TradingClosed"))).toBe("Amuma: TradingClosed");
     expect(walletErrorText(nested("AIMM: proceeds 5 below min_proceeds 6"))).toBe("Amuma: proceeds 5 below min_proceeds 6");
     expect(walletErrorText(new Error("Smart contract panicked: AIMM: TradingClosed"))).toBe("Amuma: TradingClosed");
-    expect(walletErrorText(nested("The account 0x11 is not registered"))).toBe("Smart contract panicked: The account 0x11 is not registered");
+    expect(walletErrorText(nested("The account trader.testnet is not registered"))).toBe("Smart contract panicked: The account trader.testnet is not registered");
   });
 
   it("stays quiet only for a real cancel", () => {
-    expect(walletErrorText("User canceled Ethereum wallet transaction(s).")).toBeNull();
-    expect(walletErrorText(Object.assign(new Error("MetaMask Tx Signature: User denied transaction signature."), { code: 4001 }))).toBeNull();
     expect(walletErrorText(new Error("User rejected the request."))).toBeNull();
     expect(walletErrorText(Object.assign(new Error("User closed the window"), { name: "MeteorActionError" }))).toBeNull();
     expect(walletErrorText(new Error("User cancelled the action"))).toBeNull();

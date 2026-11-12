@@ -52,14 +52,13 @@ export function failureOf(outcome: unknown): string | null {
 }
 
 /** What a wallet threw, as text for a person, or null when the person cancelled it themselves. Only real cancels count:
- * a broad match on "closed" would also hide AIMM's own "TradingClosed". MetaMask's library throws a contract failure as
+ * a broad match on "closed" would also hide AIMM's own "TradingClosed". A wallet library may throw a contract failure as
  * nested JSON, so the reason is read out of it the same way as from a receipt. */
 export function walletErrorText(e: unknown): string | null {
-  const err = e as { message?: unknown; code?: unknown; cause?: { code?: unknown } } | null;
+  const err = e as { message?: unknown } | null;
   const text = typeof e === "string" ? e : typeof err?.message === "string" ? err.message : String(e);
-  // EIP-1193's "user rejected" code, then the cancel texts of the MetaMask library, viem and Meteor
-  if (err?.code === 4001 || err?.cause?.code === 4001) return null;
-  if (/^User (canceled Ethereum wallet transaction|rejected|closed the window|cancelled the action|didn't complete the action)/.test(text)) return null;
+  // the cancel texts of the wallet libraries, Meteor's among them
+  if (/^User (rejected|closed the window|cancelled the action|didn't complete the action)/.test(text)) return null;
   return reasonIn(text) ?? (text || "The wallet did not send the transaction");
 }
 

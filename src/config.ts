@@ -9,9 +9,8 @@ export const RPC_URL = env.VITE_RPC_URL ?? "https://rpc.testnet.fastnear.com";
 /** Reads of past blocks, for the price history: only an archival node keeps them. (rpc.testnet.near.org and its
  * archival twin are deprecated and refuse nearly every request.) */
 export const ARCHIVAL_RPC_URL = env.VITE_ARCHIVAL_RPC_URL ?? "https://archival-rpc.testnet.fastnear.com";
-/** NEAR's Ethereum-compatible RPC (NEP-518), which MetaMask talks to. */
-export const ETH_RPC_URL = env.VITE_ETH_RPC_URL ?? "https://eth-rpc.testnet.near.org";
-/** The gas faucet: a little testnet NEAR for an account that holds almost none. */
+/** A gas faucet that sends a little testnet NEAR to an account holding almost none, set at build time. Without one the
+ * site hides its "get gas" buttons and tells a new account to use its wallet's own faucet. */
 export const GAS_FAUCET_URL = env.VITE_GAS_FAUCET_URL ?? "";
 export const EXPLORER_URL = env.VITE_EXPLORER_URL ?? "https://testnet.nearblocks.io";
 /** Polymarket's public market data, shown beside AIMM's prices for the questions this app mirrors. */

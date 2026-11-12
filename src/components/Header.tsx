@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { EXPLORER_URL } from "../config";
+import { EXPLORER_URL, GAS_FAUCET_URL } from "../config";
 import { useAccount, useTokenMeta } from "../hooks/data";
 import { useFaucet } from "../hooks/useFaucet";
 import { GAS_NEEDED, useGasFaucet } from "../hooks/useGasFaucet";
@@ -50,7 +50,7 @@ export function Header({ collateral }: { collateral: string | undefined }) {
               </button>
               {open && (
                 <div className="menu-pop card">
-                  {(account.data?.near ?? 0n) < GAS_NEEDED && (
+                  {GAS_FAUCET_URL && (account.data?.near ?? 0n) < GAS_NEEDED && (
                     <button onClick={() => (setOpen(false), void gas.run())} disabled={gas.pending}>
                       Get testnet NEAR for gas
                     </button>
@@ -72,7 +72,7 @@ export function Header({ collateral }: { collateral: string | undefined }) {
           </button>
         ) : (
           <>
-            <GasFirst />
+            {GAS_FAUCET_URL && <GasFirst />}
             <button className="btn primary" onClick={wallet.signIn} disabled={!wallet.ready}>
               Connect wallet
             </button>

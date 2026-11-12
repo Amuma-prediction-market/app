@@ -15,7 +15,7 @@ interface WalletState {
   signIn(): void;
   signOut(): Promise<void>;
   /** Signs and sends the transactions in order. Resolves with each outcome, or with [] when the wallet redirected away
-   * (MyNearWallet) and the result will arrive in the URL on return. Refuses while another request is open. */
+   * (a wallet that signs on its own site) and the result will arrive in the URL on return. Refuses while another request is open. */
   send(txs: Tx[]): Promise<unknown[]>;
 }
 
@@ -69,8 +69,8 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   const send = useCallback(
     async (txs: Tx[]) => {
       if (!selector || !accountId) throw new Error("Connect a wallet first");
-      // One request at a time. MetaMask's confirm window is an overlay that its library finds by class name, so a second
-      // one opened before the first closes binds to the first and is left blank, with a Cancel that does nothing.
+      // One request at a time: a second confirm window opened before the first closes can bind to the first and be left
+      // blank, with a Cancel that does nothing.
       if (busyRef.current) throw new Error("Another wallet request is still open");
       busyRef.current = true;
       setBusy(true);
@@ -83,7 +83,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         const out = await wallet.signAndSendTransactions({ transactions: txs.map((t) => ({ signerId: accountId, ...t })) });
         return out ?? [];
       } catch (e) {
-        // MetaMask signs from the account selected when you confirm, not the one the request was made for, so a switch
+        // a wallet may sign from the account selected when you confirm, not the one the request was made for, so a switch
         // halfway through fails (or is cancelled) on the new account; say that rather than show its bare error
         if (accountRef.current !== null && accountRef.current !== accountId)
           throw new Error("Your wallet switched accounts during this request. Please try again from the new account.", { cause: e });
@@ -107,21 +107,4 @@ export function useWallet(): WalletState {
   const w = useContext(WalletContext);
   if (!w) throw new Error("useWallet outside WalletProvider");
   return w;
-}
-
-/** A phone or tablet. iPadOS Safari reports itself as a Mac, so a Mac with a touch screen counts too. */
-export function isPhone(): boolean {
-  return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || (/Macintosh/.test(navigator.userAgent) && navigator.maxTouchPoints > 1);
-}
-
-/** True when the browser has an Ethereum wallet in it (MetaMask's own browser, or a desktop extension). */
-export function hasInjectedWallet(): boolean {
-  return typeof (window as { ethereum?: unknown }).ethereum !== "undefined";
-}
-
-/** A link that opens the page the user is on now inside the MetaMask app's browser, where MetaMask can sign. Built when
- * it is followed, since the site's routes live in the hash and change without a reload. */
-export function metaMaskAppLink(): string {
-  const { host, pathname, search, hash } = window.location;
-  return `https://metamask.app.link/dapp/${host}${pathname}${search}${hash}`;
 }

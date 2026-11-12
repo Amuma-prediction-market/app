@@ -31,7 +31,7 @@ function useRoute(): Route {
   return route;
 }
 
-/** A redirect wallet (MyNearWallet) comes back with the result in the query string; show it once, then drop it. */
+/** A wallet that signs on its own site comes back with the result in the query string; show it once, then drop it. */
 function useWalletReturn() {
   const toast = useToast();
   useEffect(() => {

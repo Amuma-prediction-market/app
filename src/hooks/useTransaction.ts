@@ -8,7 +8,6 @@ import { shortAccount } from "../lib/format";
 import type { Tx } from "../near/aimm";
 import { aimmEvents, failureOf, hashOf, signerOf, walletErrorText, type AimmEvent } from "../near/outcome";
 import { useWallet } from "../near/wallet";
-import { isEthAccount } from "./useGasFaucet";
 
 export function useTransaction() {
   const wallet = useWallet();
@@ -39,9 +38,9 @@ export function useTransaction() {
         }
         let text = done(ev);
         if (expect && events.some((e) => e.event === "payment_failed")) text += " The payout is kept for you; withdraw it from your position.";
-        // MetaMask signs from whichever account it has selected when you confirm, which may not be the one the trade was set up for
+        // a wallet may sign from whichever account it has selected when you confirm, not the one the trade was set up for
         const signer = signerOf(last);
-        if (signer && from && signer !== from && isEthAccount(signer)) text += ` Sent from ${shortAccount(signer)}, the account now selected in your wallet.`;
+        if (signer && from && signer !== from) text += ` Sent from ${shortAccount(signer)}, the account now selected in your wallet.`;
         toast({ text, href, linkText: "View transaction" });
         return true;
       } catch (e) {

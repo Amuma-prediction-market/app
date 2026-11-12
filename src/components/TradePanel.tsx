@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { REFRESH_MS } from "../config";
+import { GAS_FAUCET_URL, REFRESH_MS } from "../config";
 import { useAccount, useHoldings } from "../hooks/data";
 import { useFaucet } from "../hooks/useFaucet";
 import { GAS_NEEDED, useGasFaucet } from "../hooks/useGasFaucet";
@@ -154,6 +154,8 @@ export function TradePanel({
   if (phase !== "trading") action = { label: phase === "resolved" ? "Settled" : "Trading has closed", disabled: true };
   else if (!wallet.accountId) action = { label: "Connect wallet to trade", onClick: wallet.signIn };
   else if (!account.data) action = { label: "Loading your account…", disabled: true };
+  else if (account.data.near < GAS_NEEDED && !GAS_FAUCET_URL)
+    action = { label: "Your account needs testnet NEAR", disabled: true, tone: "warn", note: "Every trade pays a little NEAR for gas. Your wallet's testnet faucet can send some." };
   else if (account.data.near < GAS_NEEDED)
     action = {
       label: gas.pending ? "Sending testnet NEAR…" : "Get testnet NEAR for gas",

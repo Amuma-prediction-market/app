@@ -1,19 +1,21 @@
-# AIMM Weather Markets
+# Amuma Weather Markets
 
-**A trading app for AIMM, the Automated Information Market Maker, on NEAR testnet.** It lists the highest-temperature
-questions for New York and London, mirrored from Polymarket. You can buy and sell YES and NO on every answer, and
-redeem once the result is in.
+**Amuma's trading site: tomorrow's high temperature in New York and London, priced by AIMM, the Automated Information
+Market Maker, on NEAR testnet.** Each question mirrors Polymarket's for the same city and day. You can buy and sell YES
+and NO on every answer, and redeem once the result is in.
 
-The contract and its tests are in `Amuma-prediction-market/aimm`. This app only reads the chain and asks your wallet to sign.
+Live at [amuma-cv4.pages.dev](https://amuma-cv4.pages.dev).
+
+The contract, its tests and the whitepaper are in [`Amuma-prediction-market/aimm`](https://github.com/Amuma-prediction-market/aimm). This app only reads the chain and asks your wallet to sign.
 It has no server, no indexer and no keys.
 
 ## What the screen shows
 
 | Element | What it is |
 |---|---|
-| Chance | The curve's price for each answer, in percent; YES costs that many cents, NO the rest |
-| Information interval | The band around the price: how far the price can be trusted once the payout is taken into account. While the pot can pay every winner it is the price itself; when it cannot, it widens |
-| Polymarket ring | Polymarket's bid-ask midpoint for the same answer, read live from its public API, so you can see when AIMM's price sits away from it |
+| Amuma | The curve's price for each answer, in percent; YES costs that many cents, NO the rest |
+| Interval | The information interval: how far the price can be trusted once the payout is taken into account. While the pot can pay every winner it is the price itself ("Fully backed"); when it cannot, it widens |
+| Polymarket bid–ask | Polymarket's quotes for the same answer, read live from its public API; the chart draws its midpoint, so you can see when Amuma's price sits away from it |
 | Operator's fund ℓ and L | The money actually put up, and the depth the curve prices at; AIMM prices like an L market on ℓ < L |
 | A winning token pays | min(1, pot ÷ winning tokens), the same for every winner whenever it bought |
 | Price history | The contract's own prices at past blocks, read from a NEAR node. Hover shows the block height, so every point can be checked |
@@ -35,10 +37,11 @@ npm ci
 npm run dev
 ```
 
-Open http://localhost:5173 and connect a wallet: Meteor (with a testnet account), or MetaMask or any Ethereum wallet in the browser, which signs NEAR transactions as the NEAR account `0x<address>` (NEP-518). A MetaMask account starts with no NEAR; the trade form's "Get testnet NEAR for gas" asks the gas faucet for 0.25. The account menu's
-faucet registers your account with tUSD, the test dollar, and mints 1,000. Meteor signs that in one approval; MetaMask
-signs each action on its own, so the first time it asks for two, one to register and one to mint. A little testnet
-NEAR pays the token's storage deposit.
+Open http://localhost:5173 and connect a Meteor wallet with a testnet account. Connecting and trading cost a little
+testnet NEAR for gas. With a gas faucet configured (`VITE_GAS_FAUCET_URL`), "New wallet? Get free gas", next to Connect
+wallet, sends a new account some by name, and the trade form offers the same once connected; without one, use your
+wallet's own testnet faucet. The account menu's faucet registers your account with tUSD, the test dollar, and mints
+1,000, in one approval. A little testnet NEAR pays the token's storage deposit.
 
 ```bash
 npm run lint && npm run typecheck && npm test && npm run build
@@ -66,11 +69,12 @@ reads are spaced a second apart, and every reading is kept in the browser, becau
 Amounts stay as bigint from the contract to the screen, so nothing is rounded before it is shown. The wallet SDKs are
 loaded after the first render, which keeps the first load near 100 KB gzipped.
 
-
 ## New questions
 
-The operator opens a question per city and day with `demo/open_live.py` in `Amuma-prediction-market/aimm`, at Polymarket's
-prices. The app finds questions on the chain by itself, so a new day needs no change here.
+Each city's questions for today and tomorrow open at Polymarket's prices, and an arbitrageur keeps them in line with
+Polymarket as traders would on a live market. `demo/open_live.py` in
+[`Amuma-prediction-market/aimm`](https://github.com/Amuma-prediction-market/aimm) opens one by hand. The app finds
+questions on the chain by itself, so a new day needs no change here.
 
 ## Licence
 
