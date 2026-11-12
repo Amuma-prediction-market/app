@@ -51,7 +51,8 @@ export function PriceChart({ q, points, selected, poly }: { q: Question; points:
       .map((r) => `V${y(r.lo).toFixed(1)}H${x(r.time).toFixed(1)}`)
       .join("") +
     "Z";
-  const widest = Math.max(...rows.map((r) => r.hi - r.lo));
+  const last = rows[rows.length - 1]!;
+  const nowWidth = last.hi - last.lo;
   const ticks = Array.from({ length: 5 }, (_, i) => y0 + ((y1 - y0) * i) / 4);
   const xTicks = [0, 1 / 3, 2 / 3, 1].map((f) => t0 + f * (t1 - t0));
   const fmtTime = (t: number) =>
@@ -82,16 +83,16 @@ export function PriceChart({ q, points, selected, poly }: { q: Question; points:
         <div className="legend">
           <span>
             <span className="swatch" style={{ background: "var(--accent-soft)", border: "1px solid var(--accent)" }} />
-            Interval{widest >= 0.05 ? `, widest ${widest.toFixed(1)} pt` : ", a point so far"}
+            Information interval{nowWidth >= 0.05 ? `, now ${nowWidth.toFixed(1)} pt wide` : ", now the price itself"}
           </span>
           <span>
             <span className="swatch line" style={{ background: "var(--accent)" }} />
-            AIMM
+            Amuma
           </span>
           {pm.length > 0 && (
             <span>
               <span className="swatch line" style={{ background: "none", borderTop: "2px dashed var(--poly)", height: 0 }} />
-              Polymarket
+              Polymarket midpoint
             </span>
           )}
         </div>
@@ -102,7 +103,7 @@ export function PriceChart({ q, points, selected, poly }: { q: Question; points:
           height={H}
           viewBox={`0 0 ${w} ${H}`}
           role="img"
-          aria-label={`${q.answers[selected]}: AIMM's price and information interval${pm.length ? " and Polymarket's price" : ""} over time`}
+          aria-label={`${q.answers[selected]}: Amuma's price and information interval${pm.length ? " and Polymarket's price" : ""} over time`}
           onPointerMove={onMove}
           onPointerLeave={() => setHover(null)}
           style={{ display: "block", touchAction: "pan-y" }}
@@ -141,10 +142,10 @@ export function PriceChart({ q, points, selected, poly }: { q: Question; points:
         {hp && (
           <div className="chart-tip num" style={{ left: Math.min(Math.max(0, (x(hp.time) / w) * 100 - 10), 60) + "%", top: 8 }}>
             <div className="faint" style={{ marginBottom: 4 }}>
-              {new Date(hp.time).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })} · block {hp.height.toLocaleString()}
+              {new Date(hp.time).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })} · block {hp.height.toLocaleString("en-US")}
             </div>
             <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
-              <span>AIMM</span>
+              <span>Amuma</span>
               <span>{hp.price.toFixed(1)}%</span>
             </div>
             <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>

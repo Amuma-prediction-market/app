@@ -314,7 +314,9 @@ button:disabled {
   flex-direction: column;
   gap: 16px;
 }
-@media (max-width: 960px) {
+/* two columns only where the ladder's row (about 630px) fits beside the 360px panel, scrollbar included;
+   MarketPage.tsx matches this width */
+@media (max-width: 1080px) {
   .market-layout {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -435,7 +437,8 @@ button:disabled {
 .side-btn.active.no {
   border-color: var(--no);
 }
-@media (max-width: 640px) {
+/* the ladder stacks wherever its full row (about 630px) would not fit the page, scrollbar included */
+@media (max-width: 680px) {
   .ladder-head {
     display: none;
   }
@@ -486,6 +489,27 @@ button:disabled {
 }
 .poly-text {
   color: var(--poly);
+}
+/* a cell's own name, for the stacked ladder that has no column heads */
+.cell-label {
+  display: none;
+}
+@media (max-width: 680px) {
+  .cell-label {
+    display: block;
+    font-size: 11px;
+    font-weight: 400;
+    color: var(--ink-3);
+  }
+}
+/* text that a mouse gets from a title on hover, shown outright on touch screens */
+.touch-only {
+  display: none;
+}
+@media (hover: none) {
+  .touch-only {
+    display: block;
+  }
 }
 
 .legend {
@@ -717,4 +741,126 @@ button:disabled {
   padding: 32px 16px;
   text-align: center;
   color: var(--ink-3);
+}
+
+/* the city picker on the front page: two large choices side by side, stacked on a phone */
+.city-grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+}
+.city-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 24px;
+  color: var(--ink);
+  transition: border-color 0.15s;
+}
+.city-card:hover {
+  border-color: var(--accent);
+  text-decoration: none;
+}
+.city-name {
+  font-size: clamp(24px, 4vw, 32px);
+  font-weight: 750;
+  letter-spacing: -0.02em;
+}
+.city-go {
+  margin-top: 8px;
+  font-weight: 650;
+  color: var(--accent);
+}
+
+/* a city's page: the switch to the other city, then the city's name */
+.city-head h1 {
+  font-size: clamp(30px, 5vw, 44px);
+  letter-spacing: -0.025em;
+  line-height: 1.05;
+  margin: 18px 0 6px;
+}
+.city-head p {
+  margin: 0;
+  color: var(--ink-2);
+}
+.city-switch {
+  display: inline-flex;
+  padding: 3px;
+  gap: 2px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+}
+.city-switch a {
+  padding: 6px 16px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink-2);
+}
+.city-switch a:hover {
+  text-decoration: none;
+  color: var(--ink);
+}
+.city-switch a.on {
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: var(--shadow);
+}
+.city-now {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+/* a question card on a city page: the day large, the leading answer larger still */
+.q-card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px;
+  color: var(--ink);
+  transition: border-color 0.15s;
+}
+.q-card:hover {
+  border-color: var(--accent);
+  text-decoration: none;
+}
+.q-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+.q-date {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.q-lead {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.q-lead-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-3);
+}
+.q-lead-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+}
+.q-lead-answer {
+  font-size: 24px;
+  font-weight: 750;
+  letter-spacing: -0.02em;
+}
+.q-lead-pct {
+  font-size: 24px;
+  font-weight: 750;
+  color: var(--accent);
 }

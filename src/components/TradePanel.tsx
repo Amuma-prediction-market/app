@@ -7,13 +7,43 @@ import { GAS_NEEDED, isEthAccount, useGasFaucet } from "../hooks/useGasFaucet";
 import { useTransaction } from "../hooks/useTransaction";
 import { tokensFor } from "../lib/curve";
 import { payoutAfterBuy } from "../lib/payout";
-import { formatCents, formatPayout, formatUnits, parseUnits, WAD, wadToNumber } from "../lib/units";
+import { formatCents, formatPayout, formatUnits, normalizeAmount, parseUnits, WAD, wadToNumber } from "../lib/units";
 import { buyTx, noPayout, quoteBuy, quoteSell, sellTx, type Phase, type Question } from "../near/aimm";
 import { useWallet } from "../near/wallet";
 import type { Selection } from "./Ladder";
 
 /** How far the price may move between the quote and the trade before the contract refuses it. */
 const SLIPPAGE_BPS = 100n;
+
+/** A quote that cannot be found for this amount, however often it is asked: not worth retrying. */
+class NoQuote extends Error {}
+
+/** The contract's reasons for refusing a quote, said plainly. The view call's error carries the name after "AIMM: ",
+ * wrapped in node text that is no use to a trader. */
+const REASONS: Record<string, string> = {
+  TradingClosed: "Trading on this question has closed.",
+  SaleTooSmall: "This sale is too small for the contract to price; sell a few more tokens.",
+  ZeroAmount: "Enter a larger amount.",
+  TooManyTickets: "This trade is larger than one answer can take; try a smaller amount.",
+  SupplyShort: "That is more tokens than are in circulation.",
+  PotShort: "This sale is larger than the pot can refund right now; try a smaller amount.",
+  NotOpen: "This question is not open for trading yet.",
+  BadRange: "This answer is not part of the question.",
+};
+
+function quoteError(err: unknown): string {
+  const text = err instanceof Error ? err.message : String(err);
+  const name = text.match(/AIMM: ([A-Za-z]+)/)?.[1];
+  if (name) return REASONS[name] ?? name;
+  return err instanceof NoQuote ? text : "The node did not answer just now; it will ask again.";
+}
+
+/** Why typed text is not an amount, or null when it is one or there is none. */
+function amountProblem(text: string, decimals: number): string | null {
+  const s = normalizeAmount(text);
+  if (s === "" || parseUnits(s, decimals) !== null) return null;
+  return /^\d*\.\d+$/.test(s) ? `Up to ${decimals} decimal places` : "Enter a number, like 12.50";
+}
 
 function useDebounced<T>(value: T, ms = 300): T {
   const [v, setV] = useState(value);
@@ -71,6 +101,8 @@ export function TradePanel({
     queryKey: ["quoteBuy", q.id, range, yes, debounced?.toString()],
     enabled: side === "buy" && phase === "trading" && !!debounced && debounced > 0n,
     refetchInterval: REFRESH_MS,
+    // a node failure is worth asking again; an amount no quote fits is not
+    retry: (n, e) => !(e instanceof NoQuote) && n < 2,
     queryFn: async () => {
       const spend = debounced!;
       const feeShare = 1 + wadToNumber(q.feeRate);
@@ -80,7 +112,8 @@ export function TradePanel({
         if (quote.total <= spend) return { tokens, quote };
         tokens = (tokens * spend * 9_995n) / (quote.total * 10_000n);
       }
-      return null;
+      // say why, or the panel cannot tell this from a quote still on its way and waits for good
+      throw new NoQuote(tokens > 0n ? "No quote fits this amount exactly; try a slightly different one." : "This amount buys less than the smallest token unit; enter a larger amount.");
     },
   });
 
@@ -131,13 +164,26 @@ export function TradePanel({
   else if (account.data.near < GAS_NEEDED)
     action = { label: "Your account needs testnet NEAR", disabled: true, tone: "warn", note: "Every trade pays a little NEAR for gas. Your wallet's testnet faucet can send some." };
   else if (side === "buy" && (!account.data.registered || balance === 0n))
-    action = { label: `Get 1,000 test ${symbol}`, onClick: faucet.run, disabled: !faucet.ready, note: `${symbol} is a test dollar with a free faucet. One approval registers your account with it and mints 1,000.` };
+    action = {
+      label: `Get 1,000 test ${symbol}`,
+      onClick: faucet.run,
+      disabled: !faucet.ready,
+      // registering and minting are two actions in one transaction; MetaMask signs each action on its own
+      note: `${symbol} is a test dollar with a free faucet. ${
+        account.data.registered
+          ? "One approval mints 1,000."
+          : isEthAccount(wallet.accountId)
+            ? "MetaMask asks for two approvals: the first registers your account with it, the second mints 1,000."
+            : "One approval registers your account with it and mints 1,000."
+      }`,
+    };
+  else if (amountProblem(text, decimals)) action = { label: amountProblem(text, decimals)!, disabled: true, tone: "error" };
   else if (!amount || amount === 0n) action = { label: side === "buy" ? "Enter an amount" : "Enter how many to sell", disabled: true };
   else if (side === "sell" && amount > owned) action = { label: "More than you hold", disabled: true, tone: "error" };
   else if (side === "buy" && amount > balance) action = { label: `Not enough ${symbol}`, disabled: true, tone: "error", note: `You have ${formatUnits(balance, decimals)}. The faucet in your account menu gives 1,000 more.` };
   else if ((side === "buy" && !buy) || (side === "sell" && !sell)) {
     const err = side === "buy" ? buyQuote.error : sellQuote.error;
-    action = err ? { label: "Can't quote this trade", disabled: true, tone: "error", note: String(err instanceof Error ? err.message.replace(/^.*AIMM: /, "") : err) } : { label: "Getting a quote…", disabled: true };
+    action = err ? { label: "Can't quote this trade", disabled: true, tone: "error", note: quoteError(err) } : { label: "Getting a quote…", disabled: true };
   } else action = { label: `${side === "buy" ? "Buy" : "Sell"} ${yes ? "Yes" : "No"} · ${answer}`, onClick: () => void submit(), disabled: tx.pending };
 
   if (phase !== "trading") {
@@ -149,7 +195,9 @@ export function TradePanel({
             ? `${q.winner !== null ? q.answers[q.winner] : "The result"} won. Holders of winning tokens redeem them below; a redemption pays only the holder, so anyone may trigger it.`
             : phase === "closed"
               ? `${q.resolver} reports the result after the close; then winning tokens can be redeemed.`
-              : "This question is not open for trading."}
+              : phase === "halted"
+                ? `Trading was stopped early. ${q.resolver} reports the result; then winning tokens can be redeemed.`
+                : "This question is not open for trading."}
         </div>
       </div>
     );
@@ -185,13 +233,14 @@ export function TradePanel({
           </label>
           <div className="field">
             {side === "buy" && <span className="faint" style={{ fontSize: 22 }}>$</span>}
+            {/* kept as typed: whether a comma groups thousands or marks decimals shows only once the digits after it are in */}
             <input
               id="amount"
               inputMode="decimal"
               autoComplete="off"
               placeholder="0"
               value={text}
-              onChange={(e) => setText(e.target.value.replace(",", "."))}
+              onChange={(e) => setText(e.target.value)}
               disabled={phase !== "trading"}
             />
           </div>
@@ -262,17 +311,19 @@ export function TradePanel({
           </div>
         )}
 
-        {buy && payoutAfter + WAD / 100n < payoutNow && (
-          <div className="notice warn">
-            This buy would leave the pot short of {yes ? answer : "these answers"}'s winners: each winning token would be paid{" "}
-            {formatPayout(payoutAfter)}, not {formatPayout(payoutNow)}, until more money comes in. That is how AIMM backs a deep market with a small fund,
-            and why the information interval widens.
-          </div>
-        )}
-        <button className="btn primary block" onClick={action.onClick} disabled={action.disabled}>
+        {/* one wallet request at a time: another panel's open request disables this one too */}
+        <button className="btn primary block" onClick={action.onClick} disabled={action.disabled || wallet.busy}>
           {tx.pending ? "Confirm in your wallet…" : action.label}
         </button>
         {action.note && <div className={`notice ${action.tone ?? ""}`}>{action.note}</div>}
+        {/* below the button, so on a short laptop screen the sticky panel still shows the button with the note */}
+        {buy && payoutAfter + WAD / 100n < payoutNow && (
+          <div className="notice warn">
+            This buy would leave the pot short of {yes ? answer : "these answers"}'s winners: each winning token would be paid{" "}
+            {formatPayout(payoutAfter)}, not {formatPayout(payoutNow)}, until more money comes in. That is how Amuma backs a deep market with a small fund,
+            and why the information interval widens.
+          </div>
+        )}
         {side === "buy" && buy && (
           <div className="tiny faint">
             Sends at most {formatUnits(maxCost, decimals)} {symbol}, up to 1% above the quote, in case the price moves first. What the trade does not use comes back in the same transaction.

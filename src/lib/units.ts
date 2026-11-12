@@ -8,10 +8,19 @@ export function wadToNumber(x: bigint): number {
   return Number(x) / 1e18;
 }
 
-/** Parses a decimal string such as "12.5" into units with `decimals` places. Returns null if it is not a number or
- * has more places than the token keeps. */
+/** Reads commas the way people type them. Commas group thousands only when the whole number is grouped that way
+ * ("1,000", "12,345.6"), which never starts with 0; any other comma is a decimal point ("0,5" or "0,500", as typed in
+ * much of Europe). A mixed form such as "1,000,5" turns into two decimal points and is rejected rather than guessed. */
+export function normalizeAmount(text: string): string {
+  const t = text.trim();
+  if (/^[1-9]\d{0,2}(,\d{3})+(\.\d*)?$/.test(t)) return t.replace(/,/g, "");
+  return t.replace(/,/g, ".");
+}
+
+/** Parses a decimal string such as "12.5" (or "1,000" or "0,5", see `normalizeAmount`) into units with `decimals`
+ * places. Returns null if it is not a number or has more places than the token keeps. */
 export function parseUnits(text: string, decimals: number): bigint | null {
-  const s = text.trim();
+  const s = normalizeAmount(text);
   if (!/^\d*\.?\d*$/.test(s) || s === "" || s === ".") return null;
   const [whole = "", frac = ""] = s.split(".");
   if (frac.length > decimals) return null;

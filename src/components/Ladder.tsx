@@ -1,4 +1,5 @@
 import { formatCents, formatPercent, WAD, wadToNumber } from "../lib/units";
+import type { PolyQuote } from "../lib/polymarket";
 import type { Phase, Question } from "../near/aimm";
 
 export interface Selection {
@@ -17,12 +18,15 @@ export function Ladder({
   poly,
   selected,
   onSelect,
+  onChart,
 }: {
   q: Question;
   phase: Phase;
-  poly: (number | null)[] | null | undefined;
+  poly: (PolyQuote | null)[] | null | undefined;
   selected: Selection;
   onSelect: (s: Selection) => void;
+  /** Clicking an answer's name: charts it, and leaves the trade form as it is. */
+  onChart: (s: Selection) => void;
 }) {
   const resolved = phase === "resolved";
   const trading = phase === "trading";
@@ -30,9 +34,9 @@ export function Ladder({
     <div className="card">
       <div className="ladder-head">
         <span>Answer</span>
-        <span style={{ textAlign: "right" }}>AIMM</span>
+        <span style={{ textAlign: "right" }}>Amuma</span>
         <span title="How far the price can be trusted, given what the pot can pay">Interval</span>
-        <span>{poly ? "Polymarket" : ""}</span>
+        <span title="Polymarket's best bid and ask; Amuma inside them matches Polymarket">{poly ? "Polymarket bid–ask" : ""}</span>
         <span />
         <span />
       </div>
@@ -40,13 +44,12 @@ export function Ladder({
         const price = q.prices[i] ?? 0n;
         const [lo, hi] = q.intervals[i] ?? [price, price];
         const width = wadToNumber(hi - lo);
-        const p = poly?.[i];
-        const gap = p != null ? (p - wadToNumber(price)) * 100 : null;
+        const quote = poly?.[i] ?? null;
         const won = resolved && q.winner === i;
         const cls = ["ladder-row", selected.range === i && !resolved ? "selected" : "", won ? "won" : "", resolved && !won ? "lost" : ""].join(" ");
         return (
           <div className={cls} key={answer}>
-            <button className="answer-label" onClick={() => onSelect({ range: i, yes: selected.yes })} title="Chart this answer">
+            <button className="answer-label" onClick={() => onChart({ range: i, yes: selected.yes })} title="Chart this answer">
               {answer}
               {won && (
                 <span className="pill live" style={{ marginLeft: 8 }}>
@@ -61,15 +64,17 @@ export function Ladder({
               <span className="small faint">Fully backed</span>
             ) : (
               <span className="interval-text num">
+                {/* a phone hides the column heads, so each cell carries its own */}
+                <span className="cell-label">Interval</span>
                 {formatPercent(lo)} – {formatPercent(hi)}
                 <span className="tiny"> {(width * 100).toFixed(1)} pt wide</span>
               </span>
             )}
             <span className="poly-text num small">
-              {p != null && !resolved ? (
+              {quote && !resolved ? (
                 <>
-                  {(p * 100).toFixed(1)}%
-                  {gap !== null && Math.abs(gap) >= 0.05 && <span className="faint"> {gap > 0 ? "+" : "−"}{Math.abs(gap).toFixed(1)}</span>}
+                  <span className="cell-label">Polymarket</span>
+                  <PolyCell quote={quote} aimm={wadToNumber(price)} />
                 </>
               ) : null}
             </span>
@@ -93,5 +98,29 @@ export function Ladder({
         );
       })}
     </div>
+  );
+}
+
+/** Polymarket's bid-ask range beside AIMM's price. AIMM inside the range matches Polymarket: no one can buy on one and
+ * sell on the other at a profit. Only a price outside it gets a number, how far outside. Where Polymarket shows no
+ * range, its single price and the gap to AIMM's are shown instead. */
+function PolyCell({ quote, aimm }: { quote: PolyQuote; aimm: number }) {
+  const pct = (x: number) => (x * 100).toFixed(1);
+  if (quote.ask == null && quote.bid == null) {
+    const gap = (quote.mid - aimm) * 100;
+    return (
+      <>
+        {pct(quote.mid)}%{Math.abs(gap) >= 0.05 && <span className="faint"> {gap > 0 ? "+" : "−"}{Math.abs(gap).toFixed(1)}</span>}
+      </>
+    );
+  }
+  const lo = quote.bid ?? 0;
+  const hi = quote.ask ?? 1;
+  const off = aimm < lo ? (aimm - lo) * 100 : aimm > hi ? (aimm - hi) * 100 : 0;
+  return (
+    <span title={`Polymarket: bid ${pct(lo)}%, ask ${pct(hi)}%`}>
+      {pct(lo)}–{pct(hi)}%
+      {Math.abs(off) >= 0.05 && <span className="faint"> Amuma {off > 0 ? "+" : "−"}{Math.abs(off).toFixed(1)} outside</span>}
+    </span>
   );
 }

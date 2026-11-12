@@ -25,18 +25,28 @@ async function event(slug: string, signal?: AbortSignal): Promise<{ markets: Gam
   return ((await res.json()) as { markets: GammaMarket[]; closed?: boolean }[])[0] ?? null;
 }
 
-/** Polymarket's price for each of `answers` (0..1): the bid-ask midpoint where both sides quote, else its last
- * displayed price. Answers Polymarket does not list come back null. */
-export async function polymarketPrices(slug: string, answers: string[], signal?: AbortSignal): Promise<(number | null)[] | null> {
+/** Polymarket's quote for one answer: its best bid and ask where they exist, and the price Polymarket displays (the
+ * bid-ask midpoint, or the last price when a side is empty). Prices are 0..1. */
+export interface PolyQuote {
+  bid: number | null;
+  ask: number | null;
+  mid: number;
+}
+
+/** Polymarket's quote for each of `answers`. Answers Polymarket does not list come back null. */
+export async function polymarketPrices(slug: string, answers: string[], signal?: AbortSignal): Promise<(PolyQuote | null)[] | null> {
   const e = await event(slug, signal);
   if (!e || e.closed) return null;
   const byLabel = new Map(e.markets.map((m) => [m.groupItemTitle, m]));
+  const num = (x: number | string | null | undefined) => (x == null || x === "" ? null : Number(x));
   return answers.map((a) => {
     const m = byLabel.get(a);
     if (!m) return null;
-    if (m.bestBid != null && m.bestAsk != null) return (Number(m.bestBid) + Number(m.bestAsk)) / 2;
-    const p = m.outcomePrices ? (JSON.parse(m.outcomePrices) as string[])[0] : undefined;
-    return p === undefined ? null : Number(p);
+    const bid = num(m.bestBid);
+    const ask = num(m.bestAsk);
+    const last = m.outcomePrices ? num((JSON.parse(m.outcomePrices) as string[])[0]) : null;
+    const mid = bid != null && ask != null ? (bid + ask) / 2 : (last ?? bid ?? ask);
+    return mid == null ? null : { bid, ask, mid };
   });
 }
 

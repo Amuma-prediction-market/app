@@ -58,7 +58,8 @@ const ARCHIVAL_SPACING_MS = 1_000;
 let archivalTurn = Promise.resolve();
 
 function archival<T>(method: string, params: unknown, signal?: AbortSignal): Promise<T> {
-  const turn = archivalTurn.then(() => post<T>(ARCHIVAL_RPC_URL, method, params, signal));
+  // a read whose page was left while it waited gives up its turn rather than spend it
+  const turn = archivalTurn.then(() => (signal?.aborted ? Promise.reject<T>(signal.reason) : post<T>(ARCHIVAL_RPC_URL, method, params, signal)));
   archivalTurn = turn.then(
     () => new Promise((r) => setTimeout(r, ARCHIVAL_SPACING_MS)),
     () => new Promise((r) => setTimeout(r, ARCHIVAL_SPACING_MS)),
@@ -67,13 +68,14 @@ function archival<T>(method: string, params: unknown, signal?: AbortSignal): Pro
 }
 
 /** Reads at a past block: the regular node keeps the last two days or so, and only older blocks go to the archival
- * node. The latest block always comes from the regular node. */
+ * node. The latest block always comes from the regular node. A node that has the block but not its state
+ * (MissingTrieValue) also hands the read on, since the archival node keeps both. */
 async function past<T>(method: string, params: { [k: string]: unknown }, at: At, signal?: AbortSignal): Promise<T> {
   if (!("block_id" in at)) return post<T>(RPC_URL, method, { ...params, ...at }, signal);
   try {
     return await post<T>(RPC_URL, method, { ...params, ...at }, signal);
   } catch (e) {
-    if (!(e instanceof RpcError) || !/GARBAGE_COLLECTED/i.test(e.message)) throw e;
+    if (!(e instanceof RpcError) || !/GARBAGE_COLLECTED|MissingTrieValue/i.test(e.message)) throw e;
     return archival<T>(method, { ...params, ...at }, signal);
   }
 }

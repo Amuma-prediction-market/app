@@ -4,7 +4,7 @@
 questions for New York and London, mirrored from Polymarket. You can buy and sell YES and NO on every answer, and
 redeem once the result is in.
 
-The contract and its tests are in `weather-cast/AIMM-rust`. This app only reads the chain and asks your wallet to sign.
+The contract and its tests are in `Amuma-prediction-market/AIMM-rust`. This app only reads the chain and asks your wallet to sign.
 It has no server, no indexer and no keys.
 
 ## What the screen shows
@@ -25,7 +25,7 @@ whatever it doesn't use in the same transaction.
 
 ## Run it
 
-Requires Node 22 or later.
+Requires Node 22.13 or a later 22, Node 24, or Node 26 and later: the versions Vite, ESLint and Vitest all support.
 
 ```bash
 npm ci
@@ -36,7 +36,8 @@ npm run dev
 ```
 
 Open http://localhost:5173 and connect a wallet: Meteor (with a testnet account), or MetaMask or any Ethereum wallet in the browser, which signs NEAR transactions as the NEAR account `0x<address>` (NEP-518). A MetaMask account starts with no NEAR; the trade form's "Get testnet NEAR for gas" asks the gas faucet for 0.25. The account menu's
-faucet registers your account with tUSD, the test dollar, and mints 1,000. That is one approval, and a little testnet
+faucet registers your account with tUSD, the test dollar, and mints 1,000. Meteor signs that in one approval; MetaMask
+signs each action on its own, so the first time it asks for two, one to register and one to mint. A little testnet
 NEAR pays the token's storage deposit.
 
 ```bash
@@ -68,7 +69,7 @@ loaded after the first render, which keeps the first load near 100 KB gzipped.
 
 ## New questions
 
-The operator opens a question per city and day with `demo/open_live.py` in `weather-cast/AIMM-rust`, at Polymarket's
+The operator opens a question per city and day with `demo/open_live.py` in `Amuma-prediction-market/AIMM-rust`, at Polymarket's
 prices. The app finds questions on the chain by itself, so a new day needs no change here.
 
 ## Licence

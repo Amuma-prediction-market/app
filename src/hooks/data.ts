@@ -77,11 +77,13 @@ export function useHistory(q: Question | undefined) {
   return useQuery({
     queryKey: ["history", q?.id],
     // a live question's recent blocks come from the regular node, which allows many more reads than the archival one
-    queryFn: () => loadHistory(q!.id, q!.closeTime, live ? 48 : 20),
+    // the signal stops the reads when the page is left, so the next market's chart does not wait behind them
+    queryFn: ({ signal }) => loadHistory(q!.id, q!.closeTime, live ? 48 : 20, signal),
     enabled: !!q && q.opened,
-    // a settled question's past never changes; a live one gains a point now and then
+    // a settled question's past never changes; a live one gains a point now and then. After a failure both try again
+    // on a timer, as the page promises
     staleTime: live ? 120_000 : Infinity,
-    refetchInterval: live ? 120_000 : false,
+    refetchInterval: (query) => (live || query.state.status === "error" ? 120_000 : false),
     // a failure is most likely the archival node's rate limit: try again in a minute rather than at once
     retry: 2,
     retryDelay: 60_000,

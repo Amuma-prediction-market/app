@@ -1,7 +1,8 @@
 import { useRef, useState } from "react";
 import { AIMM_CONTRACT, EXPLORER_URL } from "../config";
 import { useHistory, useNow, usePolymarket, usePolymarketHistory, useQuestion, useTokenMeta } from "../hooks/data";
-import { cityOf, dateTime, splitTitle, timeLeft } from "../lib/format";
+import { cityOfTitle, dateTime, splitTitle, timeLeft } from "../lib/format";
+import { formatUnits } from "../lib/units";
 import { slugFor } from "../lib/polymarket";
 import { phaseOf } from "../near/aimm";
 import { Ladder, type Selection } from "./Ladder";
@@ -26,34 +27,38 @@ export function MarketPage({ id }: { id: number }) {
   const [side, setSide] = useState<Side>("buy");
   const panel = useRef<HTMLElement>(null);
 
-  if (question.isError) return <div className="card empty">There is no question {id} on {AIMM_CONTRACT}, or testnet is out of reach.</div>;
+  // a failed refetch keeps the question it had; only a question never read at all gets this card
+  if (question.isError && !q) return <div className="card empty">There is no question {id} on {AIMM_CONTRACT}, or testnet is out of reach.</div>;
   if (!q || !meta.data) return <div className="card skeleton" style={{ height: 420 }} />;
 
   const phase = phaseOf(q, now);
   const { title, replay } = splitTitle(q.title);
+  const city = cityOfTitle(q.title);
   const { decimals, symbol } = meta.data;
   const slug = slugFor(q.title, q.closeTime);
-  // on a phone the form sits below the answers, so picking one brings the form into view
+  // on a phone the form sits below the answers, so picking one brings the form into view (the width matches the
+  // one-column layout in styles.css)
   const pick = (s: Selection, to: Side) => {
     setPicked(s);
     setSide(to);
-    if (window.matchMedia("(max-width: 960px)").matches) panel.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    if (window.matchMedia("(max-width: 1080px)").matches) panel.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
   const sell = (s: Selection) => pick(s, "sell");
 
   return (
     <>
-      <a href="#/" className="small">
-        ← All markets
+      <a href={city ? `#/${city.slug}` : "#/"} className="small">
+        ← {city ? `All ${city.name} questions` : "Choose a city"}
       </a>
       <div className="market-layout" style={{ marginTop: 12 }}>
         <div className="stack" style={{ gap: 16 }}>
           <div className="market-head">
-            <div className="eyebrow">{cityOf(q.title)} · daily high</div>
+            <div className="eyebrow">Daily high</div>
             <h1>{title}</h1>
             <div className="head-meta">
               {phase === "trading" && <span className="pill live">Closes in {timeLeft(q.closeTime - now)}</span>}
               {phase === "closed" && <span className="pill warn">Closed, waiting for the result</span>}
+              {phase === "halted" && <span className="pill warn">Stopped early, waiting for the result</span>}
               {phase === "resolved" && <span className="pill">Settled: {q.winner !== null ? q.answers[q.winner] : ""}</span>}
               {replay && <span className="pill">Replay of Polymarket's trades, with an arbitrageur</span>}
               <span>Closes {dateTime(q.closeTime)}</span>
@@ -69,19 +74,27 @@ export function MarketPage({ id }: { id: number }) {
 
           {history.isPending && q.opened ? (
             <div className="card card-pad small faint">Reading the price history from past blocks…</div>
-          ) : history.isError ? (
+          ) : history.isError && !history.data ? (
             <div className="card card-pad small faint">The price history could not be read from the archival node just now; it will try again.</div>
           ) : history.data && history.data.length > 1 ? (
             <PriceChart q={q} points={history.data} selected={selection.range} poly={polyHistory.data} />
           ) : null}
 
-          <Ladder q={q} phase={phase} poly={poly.data} selected={selection} onSelect={(s) => pick(s, "buy")} />
+          {/* Polymarket's quotes stop updating once trading here closes, so they show only while it trades */}
+          <Ladder
+            q={q}
+            phase={phase}
+            poly={phase === "trading" ? poly.data : undefined}
+            selected={selection}
+            onSelect={(s) => pick(s, "buy")}
+            onChart={setPicked}
+          />
 
           <div className="card card-pad small muted stack" style={{ gap: 8 }}>
-            <div style={{ fontWeight: 700, color: "var(--ink)" }}>How AIMM prices this question</div>
+            <div style={{ fontWeight: 700, color: "var(--ink)" }}>How Amuma prices this question</div>
             <div>
-              The operator put up {meta.data && `$${(Number(q.fund) / 10 ** decimals).toLocaleString()}`}, yet the curve prices as deep as a $
-              {(Number(q.virtualLiquidity) / 10 ** decimals).toLocaleString(undefined, { maximumFractionDigits: 0 })} market, so trades move the
+              The operator put up ${formatUnits(q.fund, decimals, 0)}, yet the curve prices as deep as a ${formatUnits(q.virtualLiquidity, decimals, 0)}{" "}
+              market, so trades move the
               price less. Every winning token is paid min(1, pot ÷ winning tokens): in full while the pot covers the winners, and an equal share if it
               ever does not.
             </div>

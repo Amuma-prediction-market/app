@@ -4,9 +4,11 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useState } from "react";
 import { useToast } from "../components/Toasts";
 import { EXPLORER_URL } from "../config";
+import { shortAccount } from "../lib/format";
 import type { Tx } from "../near/aimm";
-import { aimmEvents, failureOf, hashOf, type AimmEvent } from "../near/outcome";
+import { aimmEvents, failureOf, hashOf, signerOf, walletErrorText, type AimmEvent } from "../near/outcome";
 import { useWallet } from "../near/wallet";
+import { isEthAccount } from "./useGasFaucet";
 
 export function useTransaction() {
   const wallet = useWallet();
@@ -17,6 +19,7 @@ export function useTransaction() {
   const run = useCallback(
     /** `expect` is the AIMM event that means it worked; `done` is the toast text built from it. */
     async (txs: Tx[], expect: string | null, done: (ev: AimmEvent | undefined) => string): Promise<boolean> => {
+      const from = wallet.accountId;
       setPending(true);
       try {
         const outcomes = await wallet.send(txs);
@@ -25,16 +28,25 @@ export function useTransaction() {
         const hash = hashOf(last);
         const href = hash ? `${EXPLORER_URL}/txns/${hash}` : undefined;
         const failure = outcomes.map(failureOf).find((f) => f !== null);
-        const ev = expect ? aimmEvents(last).find((e) => e.event === expect) : undefined;
-        if (failure || (expect && !ev)) {
-          toast({ kind: "error", text: failure ?? "AIMM did not take the trade; your money came back.", href, linkText: "Details" });
+        const events = aimmEvents(last);
+        const ev = expect ? events.find((e) => e.event === expect) : undefined;
+        // The expected event means AIMM did it. A sale or redemption pays out in a transfer of its own afterwards; if
+        // the token refuses that (say the holder is not registered with it), AIMM keeps the money as pending, so the
+        // trade still counts as done and only a failure without the event is reported as one.
+        if (expect ? !ev : failure) {
+          toast({ kind: "error", text: failure ?? "Amuma did not take the trade; your money came back.", href, linkText: "Details" });
           return false;
         }
-        toast({ text: done(ev), href, linkText: "View transaction" });
+        let text = done(ev);
+        if (expect && events.some((e) => e.event === "payment_failed")) text += " The payout is kept for you; withdraw it from your position.";
+        // MetaMask signs from whichever account it has selected when you confirm, which may not be the one the trade was set up for
+        const signer = signerOf(last);
+        if (signer && from && signer !== from && isEthAccount(signer)) text += ` Sent from ${shortAccount(signer)}, the account now selected in your wallet.`;
+        toast({ text, href, linkText: "View transaction" });
         return true;
       } catch (e) {
-        const text = e instanceof Error ? e.message : String(e);
-        if (!/reject|cancel|closed/i.test(text)) toast({ kind: "error", text });
+        const text = walletErrorText(e);
+        if (text) toast({ kind: "error", text });
         return false;
       } finally {
         setPending(false);

@@ -1,16 +1,21 @@
 import { useEffect, useState } from "react";
 import { EXPLORER_URL } from "./config";
 import { Header } from "./components/Header";
+import { CityPage } from "./components/CityPage";
 import { Home } from "./components/Home";
 import { MarketPage } from "./components/MarketPage";
 import { useToast } from "./components/Toasts";
 import { useQuestions } from "./hooks/data";
+import { cityBySlug, type City } from "./lib/format";
 
-type Route = { page: "home" } | { page: "market"; id: number };
+type Route = { page: "home" } | { page: "city"; city: City } | { page: "market"; id: number };
 
+/** #/q/15 is a question, #/new-york or #/london a city, anything else the city picker. */
 function parse(hash: string): Route {
   const m = hash.match(/^#\/q\/(\d+)/);
-  return m ? { page: "market", id: Number(m[1]) } : { page: "home" };
+  if (m) return { page: "market", id: Number(m[1]) };
+  const city = cityBySlug(hash.replace(/^#\/?/, "").split(/[/?]/)[0] ?? "");
+  return city ? { page: "city", city } : { page: "home" };
 }
 
 function useRoute(): Route {
@@ -47,14 +52,16 @@ function useWalletReturn() {
 export function App() {
   const route = useRoute();
   // the header only needs the collateral, which never changes, so off the home page the list is read once
-  const questions = useQuestions(route.page === "home");
+  const questions = useQuestions(route.page !== "market");
   useWalletReturn();
   // every question uses the same collateral today; the header shows the balance in it
   const collateral = questions.data?.find((q) => q.opened)?.collateral;
   return (
     <>
       <Header collateral={collateral} />
-      <main className="page">{route.page === "market" ? <MarketPage key={route.id} id={route.id} /> : <Home />}</main>
+      <main className="page">
+        {route.page === "market" ? <MarketPage key={route.id} id={route.id} /> : route.page === "city" ? <CityPage key={route.city.slug} city={route.city} /> : <Home />}
+      </main>
     </>
   );
 }
