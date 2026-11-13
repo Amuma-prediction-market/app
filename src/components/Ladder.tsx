@@ -19,6 +19,7 @@ export function Ladder({
   selected,
   onSelect,
   onChart,
+  readOnly = false,
 }: {
   q: Question;
   phase: Phase;
@@ -27,9 +28,11 @@ export function Ladder({
   onSelect: (s: Selection) => void;
   /** Clicking an answer's name: charts it, and leaves the trade form as it is. */
   onChart: (s: Selection) => void;
+  /** No YES and NO to buy: a question the site shows but does not trade. */
+  readOnly?: boolean;
 }) {
   const resolved = phase === "resolved";
-  const trading = phase === "trading";
+  const trading = phase === "trading" && !readOnly;
   return (
     <div className="card">
       <div className="ladder-head">

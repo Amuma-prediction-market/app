@@ -29,10 +29,12 @@ npm run lint && npm run typecheck && npm test && npm run build
 ## Configuration
 
 Every setting has a testnet default in `src/config.ts`, and each can be changed at build time through a `VITE_`
-variable. See `.env.example`. Reads go to FastNEAR, the RPC service NEAR's documentation points to:
-`rpc.testnet.near.org` is deprecated and refuses nearly every request. Past blocks come from the regular node while it
-keeps them, about two days, and from FastNEAR's archival node after that. The archival node rate-limits hard, so its
-reads are spaced a second apart, and every reading is kept in the browser, because a past block never changes.
+variable. See `.env.example`. `VITE_COLLATERAL` names the token the demo's questions are paid in, and `VITE_RESOLVERS`
+the accounts trusted to report their results; the site lists only the questions that use them. Reads go to FastNEAR,
+the RPC service NEAR's documentation points to: `rpc.testnet.near.org` is deprecated and refuses nearly every request.
+Past blocks come from the regular node while it keeps them, about two days, and from FastNEAR's archival node after
+that. The archival node rate-limits hard, so its reads are spaced a second apart, and the readings the chart will ask
+for again are kept in the browser, because a past block never changes.
 
 ## Layout
 
@@ -48,10 +50,11 @@ loaded after the first render, which keeps the first load near 100 KB gzipped.
 
 ## Questions
 
-The app lists whatever questions are on the contract and needs no change for a new one. In the demo, each day's
-questions open at the matching Polymarket market's prices, and an arbitrageur trades between the two as traders would
-on a live market. `demo/open_live.py` in
-[`Amuma-prediction-market/aimm`](https://github.com/Amuma-prediction-market/aimm) opens one by hand.
+The app lists the daily-high questions for the cities in `src/lib/format.ts` that are paid in the configured collateral
+and resolved by the configured resolvers, as both resolver and fallback resolver. Anyone can open a question on the
+contract, with any token and any resolver, and those with others are never listed. Any question can still be opened
+at `#/q/<id>`: one that is not the demo's is shown read-only, with a notice naming its token, operator and resolver.
+In the demo, the operator opens each day's questions at the matching Polymarket market's prices.
 
 ## Built with
 

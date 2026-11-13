@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { EXPLORER_URL, GAS_FAUCET_URL } from "../config";
+import { COLLATERAL, EXPLORER_URL, GAS_FAUCET_URL } from "../config";
 import { useAccount, useTokenMeta } from "../hooks/data";
 import { useFaucet } from "../hooks/useFaucet";
 import { GAS_NEEDED, useGasFaucet } from "../hooks/useGasFaucet";
@@ -7,11 +7,12 @@ import { formatUnits } from "../lib/units";
 import { shortAccount } from "../lib/format";
 import { useWallet } from "../near/wallet";
 
-export function Header({ collateral }: { collateral: string | undefined }) {
+/** The brand, and the signed-in account's balance in the demo's collateral (COLLATERAL), with its faucet. */
+export function Header() {
   const wallet = useWallet();
-  const meta = useTokenMeta(collateral);
-  const account = useAccount(collateral, wallet.accountId);
-  const faucet = useFaucet(collateral);
+  const meta = useTokenMeta(COLLATERAL);
+  const account = useAccount(COLLATERAL, wallet.accountId);
+  const faucet = useFaucet(COLLATERAL);
   const gas = useGasFaucet(wallet.accountId);
   const [open, setOpen] = useState(false);
   const menu = useRef<HTMLDivElement>(null);

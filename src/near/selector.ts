@@ -27,7 +27,8 @@ async function make() {
     network: { networkId: NETWORK, nodeUrl: RPC_URL, helperUrl: "", explorerUrl: EXPLORER_URL, indexerUrl: "" },
     modules: [setupMeteorWallet()],
   });
-  // no limited-access key: every AIMM call that moves money needs 1 yoctoNEAR, which only the wallet can approve
+  // at sign-in Meteor adds a function-call access key for AIMM_CONTRACT to the account. Such a key cannot attach a
+  // deposit, and every AIMM call that moves money attaches 1 yoctoNEAR, so each of those still goes through the wallet
   const modal = setupModal(selector, { contractId: AIMM_CONTRACT, description: "Sign in to trade on Amuma, on NEAR testnet." });
   return { selector, modal };
 }

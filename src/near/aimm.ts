@@ -1,7 +1,7 @@
 /** The AIMM contract's views and calls, typed. Every amount the contract returns as a string becomes a bigint here, so
  * no number is ever rounded before it is shown. */
 import { actionCreators, type Action } from "@near-js/transactions";
-import { AIMM_CONTRACT } from "../config";
+import { AIMM_CONTRACT, COLLATERAL, RESOLVERS } from "../config";
 import { LATEST, view, type At } from "./rpc";
 
 const TGAS = 10n ** 12n;
@@ -45,6 +45,8 @@ export interface Question {
   collateral: string;
   operator: string;
   resolver: string;
+  /** Reports the result if the resolver has not by `fallback_after`. */
+  fallbackResolver: string;
   /** milliseconds, for Date */
   closeTime: number;
   resolveAfter: number;
@@ -80,6 +82,17 @@ export function phaseOf(q: Question, now = Date.now()): Phase {
   return now >= q.closeTime ? "closed" : "trading";
 }
 
+/** Whether the question is one of the demo's: paid in the configured collateral, with both the resolver and the
+ * fallback resolver among the trusted ones. Anyone can open a question on the contract with any token and any
+ * resolver, and such a question's money and result are only as good as those accounts. */
+export function isTrusted(
+  q: Pick<Question, "collateral" | "resolver" | "fallbackResolver">,
+  collateral: string = COLLATERAL,
+  resolvers: readonly string[] = RESOLVERS,
+): boolean {
+  return q.collateral === collateral && resolvers.includes(q.resolver) && resolvers.includes(q.fallbackResolver);
+}
+
 const ns = (s: string) => Number(BigInt(s) / 1_000_000n);
 
 function parseQuestion(j: QuestionJson): Question {
@@ -90,6 +103,7 @@ function parseQuestion(j: QuestionJson): Question {
     collateral: j.collateral,
     operator: j.operator,
     resolver: j.resolver,
+    fallbackResolver: j.fallback_resolver,
     closeTime: ns(j.close_time),
     resolveAfter: ns(j.resolve_after),
     feeRate: BigInt(j.fee_rate),

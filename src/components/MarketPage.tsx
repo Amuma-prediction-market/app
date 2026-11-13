@@ -4,7 +4,7 @@ import { useHistory, useNow, usePolymarket, usePolymarketHistory, useQuestion, u
 import { cityOfTitle, dateTime, splitTitle, timeLeft } from "../lib/format";
 import { formatUnits } from "../lib/units";
 import { slugFor } from "../lib/polymarket";
-import { phaseOf } from "../near/aimm";
+import { isTrusted, phaseOf, type Question } from "../near/aimm";
 import { Ladder, type Selection } from "./Ladder";
 import { Position } from "./Position";
 import { PriceChart } from "./PriceChart";
@@ -29,6 +29,7 @@ export function MarketPage({ id }: { id: number }) {
 
   // a failed refetch keeps the question it had; only a question never read at all gets this card
   if (question.isError && !q) return <div className="card empty">There is no question {id} on {AIMM_CONTRACT}, or testnet is out of reach.</div>;
+  if (q && meta.isError && !meta.data) return <div className="card empty">Question {id} is paid in {q.collateral}, which does not report a usable symbol and decimals, so its amounts cannot be shown.</div>;
   if (!q || !meta.data) return <div className="card skeleton" style={{ height: 420 }} />;
 
   const phase = phaseOf(q, now);
@@ -36,6 +37,8 @@ export function MarketPage({ id }: { id: number }) {
   const city = cityOfTitle(q.title);
   const { decimals, symbol } = meta.data;
   const slug = slugFor(q.title, q.closeTime);
+  // anyone can open a question on the contract, with any token and any resolver: only the demo's own can be traded here
+  const trusted = isTrusted(q);
   // on a phone the form sits below the answers, so picking one brings the form into view (the width matches the
   // one-column layout in styles.css)
   const pick = (s: Selection, to: Side) => {
@@ -60,7 +63,8 @@ export function MarketPage({ id }: { id: number }) {
               {phase === "closed" && <span className="pill warn">Closed, waiting for the result</span>}
               {phase === "halted" && <span className="pill warn">Stopped early, waiting for the result</span>}
               {phase === "resolved" && <span className="pill">Settled: {q.winner !== null ? q.answers[q.winner] : ""}</span>}
-              {replay && <span className="pill">Replay of Polymarket's trades, with an arbitrageur</span>}
+              {!trusted && <span className="pill warn">Not opened by Amuma's demo</span>}
+              {replay && trusted && <span className="pill">Replay of Polymarket's trades, with an arbitrageur</span>}
               <span>Closes {dateTime(q.closeTime)}</span>
               {slug && (
                 <a href={`https://polymarket.com/event/${slug}`} target="_blank" rel="noreferrer">
@@ -84,6 +88,7 @@ export function MarketPage({ id }: { id: number }) {
           <Ladder
             q={q}
             phase={phase}
+            readOnly={!trusted}
             poly={phase === "trading" ? poly.data : undefined}
             selected={selection}
             onSelect={(s) => pick(s, "buy")}
@@ -104,7 +109,7 @@ export function MarketPage({ id }: { id: number }) {
               believes the chance is above the range buys Yes; below it, No.
             </div>
             <div className="faint">
-              Resolved by {q.resolver} with Polymarket's result after the close. Contract{" "}
+              {trusted && `Resolved by ${q.resolver} with Polymarket's result after the close. `}Contract{" "}
               <a href={`${EXPLORER_URL}/address/${AIMM_CONTRACT}`} target="_blank" rel="noreferrer">
                 {AIMM_CONTRACT}
               </a>
@@ -114,19 +119,52 @@ export function MarketPage({ id }: { id: number }) {
         </div>
 
         <aside className="aside" ref={panel} style={{ scrollMarginTop: 72 }}>
-          <TradePanel
-            q={q}
-            phase={phase}
-            selection={selection}
-            onSelection={setPicked}
-            side={side}
-            onSide={setSide}
-            decimals={decimals}
-            symbol={symbol}
-          />
-          <Position q={q} phase={phase} decimals={decimals} symbol={symbol} onSell={sell} />
+          {trusted ? (
+            <>
+              <TradePanel
+                q={q}
+                phase={phase}
+                selection={selection}
+                onSelection={setPicked}
+                side={side}
+                onSide={setSide}
+                decimals={decimals}
+                symbol={symbol}
+              />
+              <Position q={q} phase={phase} decimals={decimals} symbol={symbol} onSell={sell} />
+            </>
+          ) : (
+            <Untrusted q={q} />
+          )}
         </aside>
       </div>
     </>
+  );
+}
+
+/** In place of the trade form, for a question someone else opened: whose token and whose word it rests on, so the
+ * reader can judge it. The site shows it but does not trade it. */
+function Untrusted({ q }: { q: Question }) {
+  const account = (id: string) => (
+    <a href={`${EXPLORER_URL}/address/${id}`} target="_blank" rel="noreferrer">
+      {id}
+    </a>
+  );
+  return (
+    <div className="card card-pad stack">
+      <div style={{ fontWeight: 700 }}>Not opened by Amuma's demo</div>
+      <div className="notice warn">
+        Anyone can open a question on this contract, with any token and any resolver. This one was not opened by the demo,
+        so the site shows it but does not trade it.
+      </div>
+      <div className="small muted stack" style={{ gap: 6 }}>
+        <div>Paid in {account(q.collateral)}</div>
+        <div>Operator {account(q.operator)}</div>
+        <div>
+          Resolver {account(q.resolver)}
+          {q.fallbackResolver !== q.resolver && <>, then {account(q.fallbackResolver)} if it does not report</>}
+        </div>
+      </div>
+    </div>
   );
 }

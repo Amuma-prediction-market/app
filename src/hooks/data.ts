@@ -2,21 +2,27 @@
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { REFRESH_MS } from "../config";
-import { getQuestion, holdings, pendingOf, phaseOf, questionCount, type Question } from "../near/aimm";
+import { getQuestion, holdings, isTrusted, pendingOf, phaseOf, questionCount, type Question } from "../near/aimm";
 import { nearBalance } from "../near/rpc";
 import { isRegistered, registrationCost, tokenBalance, tokenMeta } from "../near/token";
 import { loadHistory } from "../lib/history";
 import { splitTitle } from "../lib/format";
 import { polymarketHistory, polymarketPrices, slugFor } from "../lib/polymarket";
 
-/** Every question. Reading them all is one call per question, so the list refreshes only where it is shown. */
+/** The demo's questions, newest first: those paid in the configured collateral and resolved by a trusted account
+ * (isTrusted). Anyone can open a question on the contract, and the others are never listed. Reading them all is one
+ * call per question, so the list refreshes only where it is shown. A question that cannot be read is left out rather
+ * than failing the list; only when none can be read does the list fail. */
 export function useQuestions(live = true) {
   return useQuery({
     queryKey: ["questions"],
     queryFn: async () => {
       const n = await questionCount();
-      const all = await Promise.all(Array.from({ length: n }, (_, i) => getQuestion(i + 1)));
-      return all.reverse();
+      const reads = await Promise.allSettled(Array.from({ length: n }, (_, i) => getQuestion(i + 1)));
+      const read = reads.flatMap((r) => (r.status === "fulfilled" ? [r.value] : []));
+      const failed = reads.find((r): r is PromiseRejectedResult => r.status === "rejected");
+      if (read.length === 0 && failed) throw failed.reason;
+      return read.filter((q) => isTrusted(q)).reverse();
     },
     refetchInterval: live ? 60_000 : false,
     staleTime: live ? 2_000 : Infinity,

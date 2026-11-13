@@ -4,6 +4,14 @@ const env = import.meta.env;
 export const NETWORK = (env.VITE_NETWORK ?? "testnet") as "testnet" | "mainnet";
 /** The AIMM contract: one account holds every question. */
 export const AIMM_CONTRACT = env.VITE_AIMM_CONTRACT ?? "market.aimm-weather.testnet";
+/** The token the demo's questions are paid in. Anyone can open a question on the contract with any token and any
+ * resolver, so the site lists only the questions paid in this token and resolved by one of `RESOLVERS`. */
+export const COLLATERAL = env.VITE_COLLATERAL ?? "tusd.aimm-weather.testnet";
+/** The accounts trusted to report a result, as resolver and as fallback resolver. */
+export const RESOLVERS: readonly string[] = (env.VITE_RESOLVERS ?? "aimm-weather-oracle.testnet")
+  .split(",")
+  .map((s: string) => s.trim())
+  .filter(Boolean);
 /** Reads of the current state. */
 export const RPC_URL = env.VITE_RPC_URL ?? "https://rpc.testnet.fastnear.com";
 /** Reads of past blocks, for the price history: only an archival node keeps them. (rpc.testnet.near.org and its

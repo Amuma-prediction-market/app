@@ -1,5 +1,6 @@
 /** Reads what a transaction did. On NEAR a call to the collateral's ft_transfer_call succeeds even when AIMM refuses the
  * trade (the money comes back), so success is read from AIMM's own event, not from the transaction's status. */
+import { AIMM_CONTRACT } from "../config";
 
 export interface AimmEvent {
   event: string;
@@ -9,13 +10,16 @@ export interface AimmEvent {
 interface Outcome {
   transaction?: { hash?: string; signer_id?: string };
   transaction_outcome?: { id?: string };
-  receipts_outcome?: { outcome: { logs: string[]; status: unknown } }[];
+  receipts_outcome?: { outcome: { executor_id?: string; logs: string[]; status: unknown } }[];
 }
 
-export function aimmEvents(outcome: unknown): AimmEvent[] {
+/** The events AIMM logged in the transaction. Only a receipt that ran on the AIMM contract counts: any other contract
+ * the transaction touches (the token, or one a token passes the call on to) can log text that looks like AIMM's. */
+export function aimmEvents(outcome: unknown, contract: string = AIMM_CONTRACT): AimmEvent[] {
   const o = outcome as Outcome;
   const out: AimmEvent[] = [];
   for (const r of o.receipts_outcome ?? []) {
+    if (r.outcome.executor_id !== contract) continue;
     // a receipt that failed was rolled back, so an event it logged before failing did not happen
     if (isFailure(r.outcome.status)) continue;
     for (const log of r.outcome.logs) {

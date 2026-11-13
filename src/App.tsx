@@ -5,7 +5,6 @@ import { CityPage } from "./components/CityPage";
 import { Home } from "./components/Home";
 import { MarketPage } from "./components/MarketPage";
 import { useToast } from "./components/Toasts";
-import { useQuestions } from "./hooks/data";
 import { cityBySlug, type City } from "./lib/format";
 
 type Route = { page: "home" } | { page: "city"; city: City } | { page: "market"; id: number };
@@ -31,7 +30,8 @@ function useRoute(): Route {
   return route;
 }
 
-/** A wallet that signs on its own site comes back with the result in the query string; show it once, then drop it. */
+/** A wallet that signs on its own site comes back with the result in the query string; show it once, then drop it.
+ * Anyone can write a link with that query string, so the wallet's own error text is never shown, only a fixed one. */
 function useWalletReturn() {
   const toast = useToast();
   useEffect(() => {
@@ -41,9 +41,9 @@ function useWalletReturn() {
     if (!hashes && !error) return;
     if (hashes) {
       const last = hashes.split(",").pop()!;
-      toast({ text: "Transaction sent.", href: `${EXPLORER_URL}/txns/${last}`, linkText: "Check it on NearBlocks" });
+      toast({ text: "Transaction sent.", href: `${EXPLORER_URL}/txns/${encodeURIComponent(last)}`, linkText: "Check it on NearBlocks" });
     } else if (error !== "userRejected") {
-      toast({ kind: "error", text: decodeURIComponent(params.get("errorMessage") ?? error ?? "The wallet reported an error") });
+      toast({ kind: "error", text: "The wallet reported an error." });
     }
     window.history.replaceState(null, "", window.location.pathname + window.location.hash);
   }, [toast]);
@@ -51,14 +51,10 @@ function useWalletReturn() {
 
 export function App() {
   const route = useRoute();
-  // the header only needs the collateral, which never changes, so off the home page the list is read once
-  const questions = useQuestions(route.page !== "market");
   useWalletReturn();
-  // every question uses the same collateral today; the header shows the balance in it
-  const collateral = questions.data?.find((q) => q.opened)?.collateral;
   return (
     <>
-      <Header collateral={collateral} />
+      <Header />
       <main className="page">
         {route.page === "market" ? <MarketPage key={route.id} id={route.id} /> : route.page === "city" ? <CityPage key={route.city.slug} city={route.city} /> : <Home />}
       </main>

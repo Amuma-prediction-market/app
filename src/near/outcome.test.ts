@@ -1,12 +1,16 @@
 import { describe, expect, it } from "vitest";
+import { AIMM_CONTRACT } from "../config";
 import { aimmEvents, failureOf, hashOf, signerOf, walletErrorText } from "./outcome";
+
+const TOKEN = "tusd.aimm-weather.testnet";
 
 const buy = {
   transaction: { hash: "4BxBf4NX" },
   receipts_outcome: [
-    { outcome: { logs: ['EVENT_JSON:{"standard":"nep141","version":"1.0.0","event":"ft_transfer","data":[{}]}'], status: { SuccessReceiptId: "a" } } },
+    { outcome: { executor_id: TOKEN, logs: ['EVENT_JSON:{"standard":"nep141","version":"1.0.0","event":"ft_transfer","data":[{}]}'], status: { SuccessReceiptId: "a" } } },
     {
       outcome: {
+        executor_id: AIMM_CONTRACT,
         logs: ['EVENT_JSON:{"standard":"aimm","version":"1.0.0","event":"buy","data":[{"id":10,"range":4,"yes":true,"tickets":"100000000","cost":"41230000","fee":"0"}]}'],
         status: { SuccessValue: "" },
       },
@@ -19,6 +23,7 @@ const refused = {
   receipts_outcome: [
     {
       outcome: {
+        executor_id: AIMM_CONTRACT,
         logs: [],
         status: { Failure: { ActionError: { kind: { FunctionCallError: { ExecutionError: "Smart contract panicked: AIMM: cost 24792066 above max_cost" } } } } },
       },
@@ -33,18 +38,21 @@ const soldIntoPending = {
   receipts_outcome: [
     {
       outcome: {
+        executor_id: AIMM_CONTRACT,
         logs: ['EVENT_JSON:{"standard":"aimm","version":"1.0.0","event":"sell","data":[{"id":10,"range":4,"yes":true,"tickets":"100","proceeds":"40"}]}'],
         status: { SuccessValue: "IjQwIg==" },
       },
     },
     {
       outcome: {
+        executor_id: TOKEN,
         logs: [],
         status: { Failure: { ActionError: { index: 0, kind: { FunctionCallError: { ExecutionError: "Smart contract panicked: The account 0x11 is not registered" } } } } },
       },
     },
     {
       outcome: {
+        executor_id: AIMM_CONTRACT,
         logs: ['EVENT_JSON:{"standard":"aimm","version":"1.0.0","event":"payment_failed","data":[{"id":10,"to":"0x11","amount":"40","pending":"40"}]}'],
         status: { SuccessValue: "" },
       },
@@ -76,9 +84,23 @@ describe("outcome", () => {
   });
 
   it("ignores an event logged by a receipt that then failed", () => {
-    const rolledBack = { receipts_outcome: [{ outcome: { logs: [buy.receipts_outcome[1]!.outcome.logs[0]!], status: { Failure: {} } } }] };
+    const rolledBack = { receipts_outcome: [{ outcome: { executor_id: AIMM_CONTRACT, logs: [buy.receipts_outcome[1]!.outcome.logs[0]!], status: { Failure: {} } } }] };
     expect(aimmEvents(rolledBack)).toHaveLength(0);
     expect(failureOf(rolledBack)).toBe("The transaction failed");
+  });
+
+  it("ignores an AIMM-looking event logged by another contract", () => {
+    // a token, or a contract a token passed the call on to, can log the same text; only the AIMM contract's own counts
+    const log = buy.receipts_outcome[1]!.outcome.logs[0]!;
+    const forged = {
+      receipts_outcome: [
+        { outcome: { executor_id: TOKEN, logs: [log], status: { SuccessValue: "" } } },
+        { outcome: { executor_id: `${AIMM_CONTRACT}.evil.testnet`, logs: [log], status: { SuccessValue: "" } } },
+        { outcome: { logs: [log], status: { SuccessValue: "" } } },
+      ],
+    };
+    expect(aimmEvents(forged)).toHaveLength(0);
+    expect(aimmEvents({ receipts_outcome: [...forged.receipts_outcome, buy.receipts_outcome[1]!] })).toHaveLength(1);
   });
 });
 
