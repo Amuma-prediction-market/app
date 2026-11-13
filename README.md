@@ -2,6 +2,9 @@
 
 Demo at [amuma-cv4.pages.dev](https://amuma-cv4.pages.dev)
 
+The contract, its Rust engine and the whitepaper are in
+[Amuma-prediction-market/aimm](https://github.com/Amuma-prediction-market/aimm).
+
 ## Run it
 
 Requires Node 22.13 or a later 22, Node 24, or Node 26 and later: the versions Vite, ESLint and Vitest all support.
