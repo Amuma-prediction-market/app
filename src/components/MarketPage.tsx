@@ -29,7 +29,16 @@ export function MarketPage({ id }: { id: number }) {
 
   // a failed refetch keeps the question it had; only a question never read at all gets this card
   if (question.isError && !q) return <div className="card empty">There is no question {id} on {AIMM_CONTRACT}, or testnet is out of reach.</div>;
-  if (q && meta.isError && !meta.data) return <div className="card empty">Question {id} is paid in {q.collateral}, which does not report a usable symbol and decimals, so its amounts cannot be shown.</div>;
+  if (q && meta.isError && !meta.data)
+    return (
+      <div className="stack">
+        <div className="card empty">
+          {q.collateral}, the token question {id} is paid in, could not be read or does not report a usable symbol and decimals, so its amounts cannot be
+          shown.
+        </div>
+        {!isTrusted(q) && <Untrusted q={q} />}
+      </div>
+    );
   if (!q || !meta.data) return <div className="card skeleton" style={{ height: 420 }} />;
 
   const phase = phaseOf(q, now);
@@ -63,10 +72,10 @@ export function MarketPage({ id }: { id: number }) {
               {phase === "closed" && <span className="pill warn">Closed, waiting for the result</span>}
               {phase === "halted" && <span className="pill warn">Stopped early, waiting for the result</span>}
               {phase === "resolved" && <span className="pill">Settled: {q.winner !== null ? q.answers[q.winner] : ""}</span>}
-              {!trusted && <span className="pill warn">Not opened by Amuma's demo</span>}
+              {!trusted && <span className="pill warn">Not one of Amuma's demo markets</span>}
               {replay && trusted && <span className="pill">Replay of Polymarket's trades, with an arbitrageur</span>}
               <span>Closes {dateTime(q.closeTime)}</span>
-              {slug && (
+              {slug && trusted && (
                 <a href={`https://polymarket.com/event/${slug}`} target="_blank" rel="noreferrer">
                   Same question on Polymarket ↗
                 </a>
@@ -81,7 +90,7 @@ export function MarketPage({ id }: { id: number }) {
           ) : history.isError && !history.data ? (
             <div className="card card-pad small faint">The price history could not be read from the archival node just now; it will try again.</div>
           ) : history.data && history.data.length > 1 ? (
-            <PriceChart q={q} points={history.data} selected={selection.range} poly={polyHistory.data} />
+            <PriceChart q={q} points={history.data} selected={selection.range} poly={trusted ? polyHistory.data : undefined} />
           ) : null}
 
           {/* Polymarket's quotes stop updating once trading here closes, so they show only while it trades */}
@@ -89,7 +98,7 @@ export function MarketPage({ id }: { id: number }) {
             q={q}
             phase={phase}
             readOnly={!trusted}
-            poly={phase === "trading" ? poly.data : undefined}
+            poly={phase === "trading" && trusted ? poly.data : undefined}
             selected={selection}
             onSelect={(s) => pick(s, "buy")}
             onChart={setPicked}
@@ -142,7 +151,7 @@ export function MarketPage({ id }: { id: number }) {
   );
 }
 
-/** In place of the trade form, for a question someone else opened: whose token and whose word it rests on, so the
+/** In place of the trade form, for a question outside the demo's token and resolvers: whose token and whose word it rests on, so the
  * reader can judge it. The site shows it but does not trade it. */
 function Untrusted({ q }: { q: Question }) {
   const account = (id: string) => (
@@ -152,10 +161,10 @@ function Untrusted({ q }: { q: Question }) {
   );
   return (
     <div className="card card-pad stack">
-      <div style={{ fontWeight: 700 }}>Not opened by Amuma's demo</div>
+      <div style={{ fontWeight: 700 }}>Not one of Amuma's demo markets</div>
       <div className="notice warn">
-        Anyone can open a question on this contract, with any token and any resolver. This one was not opened by the demo,
-        so the site shows it but does not trade it.
+        Anyone can open a question on this contract, with any token and any resolver. This one is paid in another token or
+        resolved by someone else, so the site shows it but does not trade it.
       </div>
       <div className="small muted stack" style={{ gap: 6 }}>
         <div>Paid in {account(q.collateral)}</div>

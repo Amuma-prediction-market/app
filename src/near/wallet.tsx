@@ -1,5 +1,6 @@
-/** The wallet: NEAR Wallet Selector, with Meteor. Every transaction is signed in the wallet;
- * the app never holds a key. */
+/** The wallet: NEAR Wallet Selector, with Meteor. Every transaction that moves money is signed in the wallet; the only
+ * key the page keeps is the function-call key Meteor adds at sign-in for AIMM_CONTRACT, which cannot attach a deposit
+ * (see selector.ts). */
 import type { WalletSelector } from "@near-wallet-selector/core";
 import type { WalletSelectorModal } from "@near-wallet-selector/modal-ui";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";

@@ -39,6 +39,13 @@ function cached(id: number, height: number): Reading | undefined {
   }
 }
 
+// readings kept before keys named the contract are never read again; drop them once, so they do not fill the storage
+try {
+  for (const k of Object.keys(localStorage)) if (/^aimm:h:\d+:\d+$/.test(k)) localStorage.removeItem(k);
+} catch {
+  // storage blocked: nothing to drop
+}
+
 function keep(id: number, height: number, r: Reading) {
   try {
     localStorage.setItem(cacheKey(AIMM_CONTRACT, id, height), JSON.stringify(r));

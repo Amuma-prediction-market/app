@@ -52,7 +52,7 @@ loaded after the first render, which keeps the first load near 100 KB gzipped.
 
 The app lists the daily-high questions for the cities in `src/lib/format.ts` that are paid in the configured collateral
 and resolved by the configured resolvers, as both resolver and fallback resolver. Anyone can open a question on the
-contract, with any token and any resolver, and those with others are never listed. Any question can still be opened
+contract, with any token and any resolver, and a question with any other token or resolver is never listed. Any question can still be opened
 at `#/q/<id>`: one that is not the demo's is shown read-only, with a notice naming its token, operator and resolver.
 In the demo, the operator opens each day's questions at the matching Polymarket market's prices.
 
